@@ -9,15 +9,19 @@ import com.application.metriq.data.LoggedFood
 import com.application.metriq.network.Food
 import com.application.metriq.network.FoodNutrient
 import com.application.metriq.network.RetrofitInstance
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.util.Calendar
+import java.time.LocalDate
+import java.time.ZoneId
 
 class FoodNutritionViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -28,26 +32,41 @@ class FoodNutritionViewModel(application: Application) : AndroidViewModel(applic
 
     private var searchJob: Job? = null
 
-    // Get start and end of today
-    private val todayRange: Pair<Long, Long>
-        get() {
-            val calendar = Calendar.getInstance()
-            calendar.set(Calendar.HOUR_OF_DAY, 0)
-            calendar.set(Calendar.MINUTE, 0)
-            calendar.set(Calendar.SECOND, 0)
-            calendar.set(Calendar.MILLISECOND, 0)
-            val start = calendar.timeInMillis
-            calendar.add(Calendar.DAY_OF_YEAR, 1)
-            val end = calendar.timeInMillis
-            return start to end
+    private val _selectedDayOffset = MutableStateFlow(0) // 0 = Today, 1 = Yesterday, etc.
+    val selectedDayOffset = _selectedDayOffset.asStateFlow()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val consumedFoods: StateFlow<List<LoggedFood>> = _selectedDayOffset.flatMapLatest { offset ->
+        val (start, end) = getStartEndOfDay(offset)
+        dao.getFoodsForDate(start, end)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun changeDay(amount: Int) {
+        val currentOffset = _selectedDayOffset.value
+        val newOffset = currentOffset + amount
+        // Ensure offset is strictly between 0 (Today) and 30 (30 days ago) to prevent navigation errors
+        _selectedDayOffset.value = newOffset.coerceIn(0, 30)
+    }
+
+    private fun getStartEndOfDay(offset: Int): Pair<Long, Long> {
+        return try {
+            val zoneId = ZoneId.systemDefault()
+            val today = LocalDate.now(zoneId)
+            val targetDate = today.minusDays(offset.toLong())
+            
+            val start = targetDate.atStartOfDay(zoneId).toInstant().toEpochMilli()
+            val end = targetDate.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+            
+            start to end
+        } catch (e: Exception) {
+            Log.e("FoodNutritionViewModel", "Error calculating date range for offset $offset", e)
+            // Fallback to today's range if calculation fails
+            val now = System.currentTimeMillis()
+            val start = now - (now % 86400000) // Rough approximation of start of day
+            val end = start + 86400000
+            start to end
         }
-
-    val consumedFoods: StateFlow<List<LoggedFood>> = dao.getFoodsForDate(todayRange.first, todayRange.second)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val totalProtein = consumedFoods.map { list -> list.sumOf { it.protein } }
-    val totalCarbs = consumedFoods.map { list -> list.sumOf { it.carbs } }
-    val totalFats = consumedFoods.map { list -> list.sumOf { it.fats } }
+    }
 
     fun searchFoods(query: String) {
         searchJob?.cancel()
@@ -71,18 +90,15 @@ class FoodNutritionViewModel(application: Application) : AndroidViewModel(applic
 
     fun addFood(food: Food, weight: Double) {
         viewModelScope.launch {
-            val calories = (getNutrientValue(food.foodNutrients, "Energy") / 100) * weight // Assuming Energy is KCAL
-            // Note: USDA sometimes has "Energy" with unit "kJ" or "kcal". Usually "Energy" with id 1008 is kcal.
-            // Better check for KCAL unit if possible, or assume Energy is kcal.
-            // In FoodListItem we check unitName == "KCAL". Let's do same here.
             val caloriesKcal = (food.foodNutrients.find { it.nutrientName == "Energy" && it.unitName == "KCAL" }?.value ?: 0.0) / 100 * weight
-            
             val protein = (getNutrientValue(food.foodNutrients, "Protein") / 100) * weight
             val carbs = (getNutrientValue(food.foodNutrients, "Carbohydrate, by difference") / 100) * weight
             val fats = (getNutrientValue(food.foodNutrients, "Total lipid (fat)") / 100) * weight
 
+            val foodName = if (!food.description.isNullOrBlank()) food.description else "Unknown Food"
+
             val loggedFood = LoggedFood(
-                name = food.description,
+                name = foodName,
                 calories = caloriesKcal,
                 protein = protein,
                 carbs = carbs,

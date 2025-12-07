@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.application.metriq.ui
 
 import android.util.Log
@@ -28,19 +30,25 @@ import com.application.metriq.network.Food
 import com.application.metriq.ui.theme.MetriqTheme
 import com.application.metriq.viewmodel.FoodNutritionViewModel
 import java.text.DecimalFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionViewModel = viewModel()) {
     var searchQuery by remember { mutableStateOf("") }
     val searchResults by viewModel.searchResults.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var selectedFood by remember { mutableStateOf<Food?>(null) }
-
-    val totalProtein by viewModel.totalProtein.collectAsState(initial = 0.0)
-    val totalCarbs by viewModel.totalCarbs.collectAsState(initial = 0.0)
-    val totalFats by viewModel.totalFats.collectAsState(initial = 0.0)
+    
+    // The consumedFoods list is now the single source of truth for the selected day.
     val consumedFoods by viewModel.consumedFoods.collectAsState()
+    val selectedDayOffset by viewModel.selectedDayOffset.collectAsState()
+
+    // CRASH FIX: Calculate totals directly and synchronously from the consumedFoods list.
+    val totalProtein = consumedFoods.sumOf { it.protein }
+    val totalCarbs = consumedFoods.sumOf { it.carbs }
+    val totalFats = consumedFoods.sumOf { it.fats }
 
     Scaffold(
         bottomBar = {
@@ -66,7 +74,24 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
                     .fillMaxSize()
                     .padding(16.dp),
             ) {
-                TodayNutritionCard(protein = totalProtein, carbs = totalCarbs, fats = totalFats)
+                // Navigation Card for Nutrition
+                DayNutritionCard(
+                    protein = totalProtein, 
+                    carbs = totalCarbs, 
+                    fats = totalFats,
+                    offset = selectedDayOffset,
+                    onPrev = { 
+                        if (selectedDayOffset < 30) {
+                            viewModel.changeDay(1)
+                        }
+                    },
+                    onNext = { 
+                        if (selectedDayOffset > 0) {
+                            viewModel.changeDay(-1)
+                        }
+                    }
+                )
+                
                 Spacer(modifier = Modifier.height(16.dp))
                 LogFoodCard(searchQuery = searchQuery, onQueryChange = { 
                     searchQuery = it
@@ -85,33 +110,83 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                TodayMealsCard(consumedFoods = consumedFoods)
+                TodayMealsCard(consumedFoods = consumedFoods, offset = selectedDayOffset)
             }
         }
     }
-    if (showDialog) {
-        AddFoodDialog(food = selectedFood!!, onDismiss = { showDialog = false }) { weight ->
-            viewModel.addFood(selectedFood!!, weight)
+    
+    // CRASH FIX: Ensure selectedFood is not null before showing dialog
+    val foodToLog = selectedFood
+    if (showDialog && foodToLog != null) {
+        AddFoodDialog(food = foodToLog, onDismiss = { 
             showDialog = false
+            selectedFood = null 
+        }) { weight ->
+            viewModel.addFood(foodToLog, weight)
+            showDialog = false
+            selectedFood = null
         }
     }
 }
 
 @Composable
-fun TodayNutritionCard(protein: Double, carbs: Double, fats: Double) {
+fun DayNutritionCard(
+    protein: Double, 
+    carbs: Double, 
+    fats: Double, 
+    offset: Int,
+    onPrev: () -> Unit,
+    onNext: () -> Unit
+) {
     val df = DecimalFormat("#.##")
+    
+    val title = when (offset) {
+        0 -> "Today's Nutrition"
+        1 -> "Yesterday's Nutrition"
+        else -> {
+            try {
+                val date = LocalDate.now().minusDays(offset.toLong())
+                date.format(DateTimeFormatter.ofPattern("MMM d Nutrition", Locale.getDefault()))
+            } catch (e: Exception) {
+                "Nutrition History"
+            }
+        }
+    }
+
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.PieChart, contentDescription = "Nutrition Chart", tint = Color.Green, modifier = Modifier.size(24.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Today's Nutrition", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            // Header with Arrows
+            Row(
+                verticalAlignment = Alignment.CenterVertically, 
+                horizontalArrangement = Arrangement.SpaceBetween, 
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                IconButton(onClick = onPrev, enabled = offset < 30) { 
+                    Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Day", tint = if (offset < 30) Color.White else Color.Gray) 
+                }
+                
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.PieChart, contentDescription = "Nutrition Chart", tint = Color.Green, modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
+
+                IconButton(onClick = onNext, enabled = offset > 0) { 
+                    Icon(
+                        Icons.Default.ChevronRight, 
+                        contentDescription = "Next Day", 
+                        tint = if (offset > 0) Color.White else Color.Gray
+                    ) 
+                }
             }
+            
             Spacer(modifier = Modifier.height(16.dp))
+            
+            // Stats
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     val approxCalories = (protein * 4) + (carbs * 4) + (fats * 9)
@@ -135,7 +210,6 @@ fun TodayNutritionCard(protein: Double, carbs: Double, fats: Double) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogFoodCard(searchQuery: String, onQueryChange: (String) -> Unit, onSearch: () -> Unit) {
     Card(
@@ -173,16 +247,22 @@ fun LogFoodCard(searchQuery: String, onQueryChange: (String) -> Unit, onSearch: 
 }
 
 @Composable
-fun TodayMealsCard(consumedFoods: List<LoggedFood>) {
+fun TodayMealsCard(consumedFoods: List<LoggedFood>, offset: Int) {
+    val title = when (offset) {
+        0 -> "Today's Meals"
+        1 -> "Yesterday's Meals"
+        else -> "Meals"
+    }
+    
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Today's Meals", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(bottom = 8.dp))
+            Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(bottom = 8.dp))
             if (consumedFoods.isEmpty()) {
-                Text("No meals logged today.", color = Color.Gray)
+                Text("No meals logged for this day.", color = Color.Gray)
             } else {
                 LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                     items(consumedFoods) { consumedFood ->
@@ -207,7 +287,6 @@ fun ConsumedFoodItem(consumedFood: LoggedFood) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddFoodDialog(food: Food, onDismiss: () -> Unit, onConfirm: (Double) -> Unit) {
     var weight by remember { mutableStateOf("") }
@@ -303,7 +382,8 @@ fun FoodListItem(food: Food, onClick: () -> Unit) {
     }
 }
 
-fun formatFoodName(name: String): String {
+fun formatFoodName(name: String?): String {
+    if (name.isNullOrBlank()) return "Unknown Food"
     val cleanedName = name
         .replace("(?i)ns as to".toRegex(), "")
         .replace(";", ",")
@@ -326,12 +406,4 @@ fun formatFoodName(name: String): String {
             }
         }
     }.joinToString(" ")
-}
-
-@Preview(showBackground = true)
-@Composable
-fun FoodNutritionScreenPreview() {
-    MetriqTheme {
-        FoodNutritionScreen(navController = rememberNavController())
-    }
 }
