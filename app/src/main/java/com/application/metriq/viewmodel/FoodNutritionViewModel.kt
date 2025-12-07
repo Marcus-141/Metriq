@@ -1,5 +1,6 @@
 package com.application.metriq.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.application.metriq.network.Food
@@ -31,12 +32,18 @@ class FoodNutritionViewModel : ViewModel() {
     }
 
     fun searchFoods(query: String) {
+        if (query.isBlank()) {
+            _searchResults.value = emptyList()
+            return
+        }
         viewModelScope.launch {
             try {
+                Log.d("FoodNutritionViewModel", "Searching for: $query")
                 val response = RetrofitInstance.api.searchFoods(query)
                 _searchResults.value = response.foods
-            } catch (_: Exception) {
-                // Handle error
+                Log.d("FoodNutritionViewModel", "Found ${response.foods.size} results")
+            } catch (e: Exception) {
+                Log.e("FoodNutritionViewModel", "API call failed: ${e.message}", e)
             }
         }
     }

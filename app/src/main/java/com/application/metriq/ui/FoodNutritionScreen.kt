@@ -1,5 +1,6 @@
 package com.application.metriq.ui
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,7 +30,7 @@ import java.text.DecimalFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FoodNutritionScreen(viewModel: FoodNutritionViewModel = viewModel()) {
+fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionViewModel = viewModel()) {
     var searchQuery by remember { mutableStateOf("") }
     val searchResults by viewModel.searchResults.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
@@ -40,26 +41,48 @@ fun FoodNutritionScreen(viewModel: FoodNutritionViewModel = viewModel()) {
     val totalFats by viewModel.totalFats.collectAsState(initial = 0.0)
     val consumedFoods by viewModel.consumedFoods.collectAsState()
 
-    Surface(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-        ) {
-            TodayNutritionCard(protein = totalProtein, carbs = totalCarbs, fats = totalFats)
-            Spacer(modifier = Modifier.height(16.dp))
-            LogFoodCard(searchQuery = searchQuery, onQueryChange = { searchQuery = it }, onSearch = { viewModel.searchFoods(searchQuery) })
-            Spacer(modifier = Modifier.height(16.dp))
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(searchResults) { food ->
-                    FoodListItem(food = food, onClick = {
-                        selectedFood = food
-                        showDialog = true
-                    })
+    Scaffold(
+        bottomBar = {
+            BottomAppBar(containerColor = Color.Black) {
+                IconButton(onClick = { navController.navigate("dashboard") }, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Filled.Home, contentDescription = "Dashboard", tint = Color.White)
+                }
+                IconButton(onClick = { navController.navigate("workout") }, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Filled.FitnessCenter, contentDescription = "Workout", tint = Color.White)
+                }
+                IconButton(onClick = { navController.navigate("food") }, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Filled.Fastfood, contentDescription = "Food", tint = Color.White)
+                }
+                IconButton(onClick = { navController.navigate("profile") }, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Filled.Person, contentDescription = "Profile", tint = Color.White)
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            TodayMealsCard(consumedFoods = consumedFoods)
+        }
+    ) { innerPadding ->
+        Surface(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+            ) {
+                TodayNutritionCard(protein = totalProtein, carbs = totalCarbs, fats = totalFats)
+                Spacer(modifier = Modifier.height(16.dp))
+                LogFoodCard(searchQuery = searchQuery, onQueryChange = { searchQuery = it }, onSearch = { 
+                    Log.d("FoodNutritionScreen", "Search button clicked with query: $searchQuery")
+                    viewModel.searchFoods(searchQuery) 
+                })
+                Spacer(modifier = Modifier.height(16.dp))
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    items(searchResults) { food ->
+                        FoodListItem(food = food, onClick = {
+                            selectedFood = food
+                            showDialog = true
+                        })
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                TodayMealsCard(consumedFoods = consumedFoods)
+            }
         }
     }
     if (showDialog) {
@@ -232,6 +255,6 @@ fun FoodListItem(food: Food, onClick: () -> Unit) {
 @Composable
 fun FoodNutritionScreenPreview() {
     MetriqTheme {
-        FoodNutritionScreen()
+        FoodNutritionScreen(navController = rememberNavController())
     }
 }
