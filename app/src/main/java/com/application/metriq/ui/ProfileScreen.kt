@@ -5,7 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Fastfood
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -64,8 +65,11 @@ fun ProfileScreen(navController: NavController) {
                 IconButton(onClick = { navController.navigate("dashboard") }, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Filled.Home, contentDescription = "Dashboard", tint = Color.White)
                 }
-                IconButton(onClick = { navController.navigate("tracking") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.DateRange, contentDescription = "Tracking", tint = Color.White)
+                IconButton(onClick = { navController.navigate("workout") }, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Filled.FitnessCenter, contentDescription = "Workout", tint = Color.White)
+                }
+                IconButton(onClick = { navController.navigate("food") }, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Filled.Fastfood, contentDescription = "Food", tint = Color.White)
                 }
                 IconButton(onClick = { navController.navigate("profile") }, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Filled.Person, contentDescription = "Profile", tint = Color.White)

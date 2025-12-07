@@ -29,8 +29,11 @@ fun AppNavHost() {
         composable("dashboard") {
             DashboardScreen(navController = navController)
         }
-        composable("tracking") {
-            TrackingScreen(navController = navController)
+        composable("workout") {
+            WorkoutScreen(navController = navController)
+        }
+        composable("food") {
+            FoodNutritionScreen(navController = navController)
         }
         composable("profile") {
             ProfileScreen(navController = navController)
