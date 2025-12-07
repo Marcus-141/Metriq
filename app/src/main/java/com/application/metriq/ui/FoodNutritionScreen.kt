@@ -23,9 +23,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.application.metriq.data.LoggedFood
 import com.application.metriq.network.Food
 import com.application.metriq.ui.theme.MetriqTheme
-import com.application.metriq.viewmodel.ConsumedFood
 import com.application.metriq.viewmodel.FoodNutritionViewModel
 import java.text.DecimalFormat
 
@@ -68,7 +68,10 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
             ) {
                 TodayNutritionCard(protein = totalProtein, carbs = totalCarbs, fats = totalFats)
                 Spacer(modifier = Modifier.height(16.dp))
-                LogFoodCard(searchQuery = searchQuery, onQueryChange = { searchQuery = it }, onSearch = { 
+                LogFoodCard(searchQuery = searchQuery, onQueryChange = { 
+                    searchQuery = it
+                    viewModel.searchFoods(it)
+                }, onSearch = { 
                     Log.d("FoodNutritionScreen", "Search button clicked with query: $searchQuery")
                     viewModel.searchFoods(searchQuery) 
                 })
@@ -111,7 +114,8 @@ fun TodayNutritionCard(protein: Double, carbs: Double, fats: Double) {
             Spacer(modifier = Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("0", style = MaterialTheme.typography.headlineSmall, color = Color.Green)
+                    val approxCalories = (protein * 4) + (carbs * 4) + (fats * 9)
+                    Text("${approxCalories.toInt()}", style = MaterialTheme.typography.headlineSmall, color = Color.Green)
                     Text("CALORIES", style = MaterialTheme.typography.bodySmall)
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -169,7 +173,7 @@ fun LogFoodCard(searchQuery: String, onQueryChange: (String) -> Unit, onSearch: 
 }
 
 @Composable
-fun TodayMealsCard(consumedFoods: List<ConsumedFood>) {
+fun TodayMealsCard(consumedFoods: List<LoggedFood>) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
@@ -191,14 +195,14 @@ fun TodayMealsCard(consumedFoods: List<ConsumedFood>) {
 }
 
 @Composable
-fun ConsumedFoodItem(consumedFood: ConsumedFood) {
+fun ConsumedFoodItem(consumedFood: LoggedFood) {
     val df = DecimalFormat("#.##")
-    val protein = (consumedFood.food.foodNutrients.find { it.nutrientName == "Protein" }?.value ?: 0.0) / 100 * consumedFood.weight
-    val carbs = (consumedFood.food.foodNutrients.find { it.nutrientName == "Carbohydrate, by difference" }?.value ?: 0.0) / 100 * consumedFood.weight
-    val fats = (consumedFood.food.foodNutrients.find { it.nutrientName == "Total lipid (fat)" }?.value ?: 0.0) / 100 * consumedFood.weight
+    val protein = consumedFood.protein
+    val carbs = consumedFood.carbs
+    val fats = consumedFood.fats
 
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text = "${formatFoodName(consumedFood.food.description)} (${consumedFood.weight}g)")
+        Text(text = "${formatFoodName(consumedFood.name)} (${consumedFood.weight}g)")
         Text(text = "P: ${df.format(protein)}g, C: ${df.format(carbs)}g, F: ${df.format(fats)}g")
     }
 }
