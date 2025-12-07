@@ -52,6 +52,6 @@ fun WorkoutScreen(navController: NavController) {
 @Composable
 fun WorkoutScreenPreview() {
     MetriqTheme {
-        WorkoutScreen(navController = rememberNavController())
+        WorkoutScreen(rememberNavController())
     }
 }

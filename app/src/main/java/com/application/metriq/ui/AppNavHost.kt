@@ -33,7 +33,7 @@ fun AppNavHost() {
             WorkoutScreen(navController = navController)
         }
         composable("food") {
-            FoodNutritionScreen(navController = navController)
+            FoodNutritionScreen()
         }
         composable("profile") {
             ProfileScreen(navController = navController)
