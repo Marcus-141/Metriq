@@ -39,7 +39,8 @@ class FoodNutritionViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 Log.d("FoodNutritionViewModel", "Searching for: $query")
-                val response = RetrofitInstance.api.searchFoods(query)
+                val dataTypes = listOf("Foundation", "SR Legacy", "Survey (FNDDS)")
+                val response = RetrofitInstance.api.searchFoods(query, dataTypes)
                 _searchResults.value = response.foods
                 Log.d("FoodNutritionViewModel", "Found ${response.foods.size} results")
             } catch (e: Exception) {

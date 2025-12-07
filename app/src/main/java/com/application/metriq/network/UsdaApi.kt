@@ -8,6 +8,7 @@ interface UsdaApi {
     @GET("foods/search")
     suspend fun searchFoods(
         @Query("query") query: String,
+        @Query("dataType") dataTypes: List<String>,
         @Query("api_key") apiKey: String = BuildConfig.USDA_API_KEY
     ): FoodSearchResponse
 }

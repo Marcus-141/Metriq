@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -197,7 +198,7 @@ fun ConsumedFoodItem(consumedFood: ConsumedFood) {
     val fats = (consumedFood.food.foodNutrients.find { it.nutrientName == "Total lipid (fat)" }?.value ?: 0.0) / 100 * consumedFood.weight
 
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text = "${consumedFood.food.description} (${consumedFood.weight}g)")
+        Text(text = "${formatFoodName(consumedFood.food.description)} (${consumedFood.weight}g)")
         Text(text = "P: ${df.format(protein)}g, C: ${df.format(carbs)}g, F: ${df.format(fats)}g")
     }
 }
@@ -209,7 +210,7 @@ fun AddFoodDialog(food: Food, onDismiss: () -> Unit, onConfirm: (Double) -> Unit
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(food.description) },
+        title = { Text(formatFoodName(food.description)) },
         text = {
             OutlinedTextField(
                 value = weight,
@@ -239,16 +240,88 @@ fun AddFoodDialog(food: Food, onDismiss: () -> Unit, onConfirm: (Double) -> Unit
 
 @Composable
 fun FoodListItem(food: Food, onClick: () -> Unit) {
+    val calories = food.foodNutrients.find { it.nutrientName == "Energy" && it.unitName == "KCAL" }?.value ?: 0.0
+    val protein = food.foodNutrients.find { it.nutrientName == "Protein" }?.value ?: 0.0
+    val carbs = food.foodNutrients.find { it.nutrientName == "Carbohydrate, by difference" }?.value ?: 0.0
+    val fats = food.foodNutrients.find { it.nutrientName == "Total lipid (fat)" }?.value ?: 0.0
+    val df = DecimalFormat("#.##")
+
+    val foodName = when {
+        !food.description.isNullOrBlank() -> food.description
+        !food.additionalDescriptions.isNullOrBlank() -> food.additionalDescriptions
+        else -> "Unknown Food"
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f))
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = food.description, style = MaterialTheme.typography.bodyLarge)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "${formatFoodName(foodName)} (100g)",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "${calories.toInt()} kcal • P: ${df.format(protein)}g C: ${df.format(carbs)}g F: ${df.format(fats)}g",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+            Surface(
+                shape = CircleShape,
+                color = Color(0xFFE8F5E9),
+                modifier = Modifier.size(32.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Add",
+                        tint = Color(0xFF4CAF50),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
     }
+}
+
+fun formatFoodName(name: String): String {
+    val cleanedName = name
+        .replace("(?i)ns as to".toRegex(), "")
+        .replace(";", ",")
+    
+    val smallWords = setOf("and", "with", "or", "in", "of", "a", "an", "the", "to", "for", "at", "by", "on")
+
+    return cleanedName.lowercase().split("\\s+".toRegex()).mapIndexed { index, word ->
+        if (word.isEmpty()) return@mapIndexed ""
+        
+        val bareWord = word.filter { it.isLetter() }
+        if (index > 0 && smallWords.contains(bareWord)) {
+            word // keep lowercase
+        } else {
+            // Capitalize first letter
+            val firstLetterIdx = word.indexOfFirst { it.isLetter() }
+            if (firstLetterIdx != -1) {
+                word.substring(0, firstLetterIdx) + word[firstLetterIdx].uppercase() + word.substring(firstLetterIdx + 1)
+            } else {
+                word
+            }
+        }
+    }.joinToString(" ")
 }
 
 @Preview(showBackground = true)
