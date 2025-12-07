@@ -146,7 +146,6 @@ fun ProfileScreen(navController: NavController) {
                                     tempAge, 
                                     tempGender, 
                                     tempActivityLevel,
-                                    "", // Deprecated calories field
                                     proteinValue,
                                     bmrValue.toInt().toString(),
                                     teeValue.toInt().toString()
