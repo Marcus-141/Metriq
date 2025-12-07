@@ -103,7 +103,7 @@ fun LoginScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = {
-                    if (email == "alexstein1663@gmail.com" && password == "Qwerty12345") {
+                    if (email == "example1234@gmail.com" && password == "Qwerty12345") {
                         if (rememberMe) {
                             scope.launch {
                                 sessionManager.setLoggedIn(true)

@@ -1,7 +1,5 @@
 package com.application.metriq.network
 
-import com.google.gson.annotations.SerializedName
-
 data class FoodSearchResponse(
     val foods: List<Food>
 )

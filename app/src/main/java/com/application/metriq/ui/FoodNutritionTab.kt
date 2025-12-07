@@ -11,15 +11,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.application.metriq.network.Food
 import com.application.metriq.ui.theme.MetriqTheme
 import com.application.metriq.viewmodel.FoodNutritionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FoodNutritionTab(navController: NavController, viewModel: FoodNutritionViewModel = viewModel()) {
+fun FoodNutritionTab(viewModel: FoodNutritionViewModel = viewModel()) {
     var searchQuery by remember { mutableStateOf("") }
     val searchResults by viewModel.searchResults.collectAsState()
 
@@ -76,6 +74,6 @@ fun FoodListItem(food: Food) {
 @Composable
 fun FoodNutritionTabPreview() {
     MetriqTheme {
-        FoodNutritionTab(navController = rememberNavController())
+        FoodNutritionTab()
     }
 }

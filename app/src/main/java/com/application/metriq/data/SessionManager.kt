@@ -21,7 +21,6 @@ class SessionManager(context: Context) {
         val AGE = stringPreferencesKey("age")
         val GENDER = stringPreferencesKey("gender")
         val ACTIVITY_LEVEL = stringPreferencesKey("activity_level")
-        val CALORIES = stringPreferencesKey("calories") // This will now represent TEE (Recommended)
         val PROTEIN = stringPreferencesKey("protein")
         val BMR = stringPreferencesKey("bmr")
         val TEE = stringPreferencesKey("tee")
@@ -43,7 +42,6 @@ class SessionManager(context: Context) {
         age: String, 
         gender: String, 
         activityLevel: String,
-        calories: String, 
         protein: String,
         bmr: String,
         tee: String
@@ -54,7 +52,6 @@ class SessionManager(context: Context) {
             it[AGE] = age
             it[GENDER] = gender
             it[ACTIVITY_LEVEL] = activityLevel
-            it[CALORIES] = calories
             it[PROTEIN] = protein
             it[BMR] = bmr
             it[TEE] = tee
@@ -66,7 +63,6 @@ class SessionManager(context: Context) {
     val age: Flow<String> = dataStore.data.map { it[AGE] ?: "" }
     val gender: Flow<String> = dataStore.data.map { it[GENDER] ?: "" }
     val activityLevel: Flow<String> = dataStore.data.map { it[ACTIVITY_LEVEL] ?: "" }
-    val calories: Flow<String> = dataStore.data.map { it[CALORIES] ?: "" }
     val protein: Flow<String> = dataStore.data.map { it[PROTEIN] ?: "" }
     val bmr: Flow<String> = dataStore.data.map { it[BMR] ?: "" }
     val tee: Flow<String> = dataStore.data.map { it[TEE] ?: "" }

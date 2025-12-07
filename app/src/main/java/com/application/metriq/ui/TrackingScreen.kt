@@ -44,8 +44,8 @@ fun TrackingScreen(navController: NavController) {
                 }
             }
             when (tabIndex) {
-                0 -> WorkoutTab(navController)
-                1 -> FoodNutritionTab(navController)
+                0 -> WorkoutTab()
+                1 -> FoodNutritionTab()
             }
         }
     }

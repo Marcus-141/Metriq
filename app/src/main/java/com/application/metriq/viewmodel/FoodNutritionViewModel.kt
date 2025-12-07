@@ -18,7 +18,7 @@ class FoodNutritionViewModel : ViewModel() {
             try {
                 val response = RetrofitInstance.api.searchFoods(query)
                 _searchResults.value = response.foods
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Handle error
             }
         }

@@ -189,11 +189,11 @@ fun ProfileInfoCard(
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             if (isEditing) {
                 EditableProfileRow(label = "Weight (kg)", value = weight, onValueChange = onWeightChange)
-                Divider(color = Color.Gray.copy(alpha = 0.5f))
+                HorizontalDivider(color = Color.Gray.copy(alpha = 0.5f))
                 EditableProfileRow(label = "Height (cm)", value = height, onValueChange = onHeightChange)
-                Divider(color = Color.Gray.copy(alpha = 0.5f))
+                HorizontalDivider(color = Color.Gray.copy(alpha = 0.5f))
                 EditableProfileRow(label = "Age", value = age, onValueChange = onAgeChange)
-                Divider(color = Color.Gray.copy(alpha = 0.5f))
+                HorizontalDivider(color = Color.Gray.copy(alpha = 0.5f))
                 
                 // Gender Dropdown
                 Row(
@@ -239,7 +239,7 @@ fun ProfileInfoCard(
                     }
                 }
 
-                Divider(color = Color.Gray.copy(alpha = 0.5f))
+                HorizontalDivider(color = Color.Gray.copy(alpha = 0.5f))
 
                 // Activity Level Dropdown
                 Row(
@@ -287,13 +287,13 @@ fun ProfileInfoCard(
 
             } else {
                 ProfileDetailRow(label = "Weight", value = "$weight kg")
-                Divider(color = Color.Gray.copy(alpha = 0.5f))
+                HorizontalDivider(color = Color.Gray.copy(alpha = 0.5f))
                 ProfileDetailRow(label = "Height", value = "$height cm")
-                Divider(color = Color.Gray.copy(alpha = 0.5f))
+                HorizontalDivider(color = Color.Gray.copy(alpha = 0.5f))
                 ProfileDetailRow(label = "Age", value = age)
-                Divider(color = Color.Gray.copy(alpha = 0.5f))
+                HorizontalDivider(color = Color.Gray.copy(alpha = 0.5f))
                 ProfileDetailRow(label = "Gender", value = gender)
-                Divider(color = Color.Gray.copy(alpha = 0.5f))
+                HorizontalDivider(color = Color.Gray.copy(alpha = 0.5f))
                 ProfileDetailRow(label = "Activity Level", value = activityLevel)
             }
         }
@@ -343,9 +343,9 @@ fun GoalsCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             ProfileDetailRow(label = "Protein Requirements", value = "$protein g")
-            Divider(color = Color.Gray.copy(alpha = 0.5f))
+            HorizontalDivider(color = Color.Gray.copy(alpha = 0.5f))
             ProfileDetailRow(label = "Basal Metabolic Rate (BMR)", value = "$bmr kCal")
-            Divider(color = Color.Gray.copy(alpha = 0.5f))
+            HorizontalDivider(color = Color.Gray.copy(alpha = 0.5f))
             ProfileDetailRow(label = "Total Energy Expenditure (TEE)", value = "$tee kCal")
         }
     }
