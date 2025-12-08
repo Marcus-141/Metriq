@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.application.metriq.data.LoggedFood
 import com.application.metriq.network.Food
@@ -46,31 +47,19 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
     var showDialog by remember { mutableStateOf(false) }
     var selectedFood by remember { mutableStateOf<Food?>(null) }
     
-    // The consumedFoods list is now the single source of truth for the selected day.
     val consumedFoods by viewModel.consumedFoods.collectAsState()
     val selectedDayOffset by viewModel.selectedDayOffset.collectAsState()
 
-    // CRASH FIX: Calculate totals directly and synchronously from the consumedFoods list.
     val totalProtein = consumedFoods.sumOf { it.protein }
     val totalCarbs = consumedFoods.sumOf { it.carbs }
     val totalFats = consumedFoods.sumOf { it.fats }
+    
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     Scaffold(
         bottomBar = {
-            BottomAppBar(containerColor = Color.Black) {
-                IconButton(onClick = { navController.navigate("dashboard") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.Home, contentDescription = "Dashboard", tint = Color.White)
-                }
-                IconButton(onClick = { navController.navigate("workout") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.FitnessCenter, contentDescription = "Workout", tint = Color.White)
-                }
-                IconButton(onClick = { navController.navigate("food") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.Fastfood, contentDescription = "Food", tint = Color.White)
-                }
-                IconButton(onClick = { navController.navigate("profile") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.Person, contentDescription = "Profile", tint = Color.White)
-                }
-            }
+            MetriqBottomBar(navController = navController, currentRoute = currentRoute)
         }
     ) { innerPadding ->
         Surface(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
@@ -79,7 +68,6 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
                     .fillMaxSize()
                     .padding(16.dp),
             ) {
-                // Navigation Card for Nutrition
                 DayNutritionCard(
                     protein = totalProtein, 
                     carbs = totalCarbs, 
@@ -120,7 +108,6 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
         }
     }
     
-    // CRASH FIX: Ensure selectedFood is not null before showing dialog
     val foodToLog = selectedFood
     if (showDialog && foodToLog != null) {
         AddFoodDialog(food = foodToLog, onDismiss = { 
@@ -163,7 +150,6 @@ fun DayNutritionCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header with Arrows
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -204,7 +190,6 @@ fun DayNutritionCard(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Stats Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround

@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -28,7 +29,11 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.application.metriq.data.entity.WorkoutRoutine
 import com.application.metriq.ui.theme.MetriqTheme
+import com.application.metriq.ui.theme.LogoCyan
 import com.application.metriq.viewmodel.WorkoutViewModel
+
+// Define the Workout Blue color locally or use the one from the theme if available
+val WorkoutBlue = Color(0xFF2962FF)
 
 @Composable
 fun WorkoutScreen(navController: NavController, viewModel: WorkoutViewModel = viewModel()) {
@@ -36,27 +41,14 @@ fun WorkoutScreen(navController: NavController, viewModel: WorkoutViewModel = vi
     
     Scaffold(
         bottomBar = {
-            BottomAppBar(containerColor = Color.Black) {
-                IconButton(onClick = { navController.navigate("dashboard") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.Home, contentDescription = "Dashboard", tint = Color.White)
-                }
-                IconButton(onClick = { navController.navigate("workout") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.FitnessCenter, contentDescription = "Workout", tint = Color.White)
-                }
-                IconButton(onClick = { navController.navigate("food") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.Fastfood, contentDescription = "Food", tint = Color.White)
-                }
-                IconButton(onClick = { navController.navigate("profile") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.Person, contentDescription = "Profile", tint = Color.White)
-                }
-            }
+            MetriqBottomBar(navController = navController, currentRoute = "workout")
         }
     ) { innerPadding ->
         Surface(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            color = Color(0xFFF5F7FA)
+            color = MaterialTheme.colorScheme.background
         ) {
             if (isCreatingRoutine) {
                 CreateRoutineScreen(
@@ -110,7 +102,7 @@ fun WorkoutListScreen(
                     .fillMaxSize()
                     .background(
                         brush = Brush.horizontalGradient(
-                            colors = listOf(Color(0xFF2962FF), Color(0xFF448AFF))
+                            colors = listOf(WorkoutBlue, Color(0xFF448AFF))
                         )
                     )
             ) {
@@ -139,7 +131,7 @@ fun WorkoutListScreen(
                     ) {
                         Text(
                             text = "Start Now",
-                            color = Color(0xFF2962FF),
+                            color = WorkoutBlue,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -176,9 +168,9 @@ fun WorkoutListScreen(
             
             TextButton(
                 onClick = onCreateRoutine,
-                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF2962FF)),
+                colors = ButtonDefaults.textButtonColors(contentColor = WorkoutBlue),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                modifier = Modifier.background(Color(0xFFE3F2FD), RoundedCornerShape(8.dp))
+                modifier = Modifier.background(WorkoutBlue.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
@@ -194,8 +186,8 @@ fun WorkoutListScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
-                    .background(Color.White, RoundedCornerShape(12.dp))
-                    .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp)), // Dashed border simulated
+                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+                    .border(1.dp, Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -221,7 +213,7 @@ fun RoutineItem(routine: WorkoutRoutine) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
@@ -236,7 +228,7 @@ fun RoutineItem(routine: WorkoutRoutine) {
                     text = routine.name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = Color.Black
+                    color = Color.White
                 )
                 val exerciseCount = routine.exercises.size
                 Text(
@@ -246,7 +238,7 @@ fun RoutineItem(routine: WorkoutRoutine) {
                 )
             }
             IconButton(onClick = { /* Start Routine */ }) {
-                Icon(Icons.Default.PlayArrow, contentDescription = "Start", tint = Color(0xFF2962FF))
+                Icon(Icons.Default.PlayArrow, contentDescription = "Start", tint = WorkoutBlue)
             }
         }
     }
@@ -291,10 +283,10 @@ fun CreateRoutineScreen(
             IconButton(
                 onClick = onBack,
                 modifier = Modifier
-                    .background(Color(0xFFE3F2FD), CircleShape)
+                    .background(Color.White.copy(alpha = 0.1f), CircleShape)
                     .size(40.dp)
             ) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color(0xFF1565C0))
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
             }
 
             Text(
@@ -327,7 +319,7 @@ fun CreateRoutineScreen(
             text = "Routine Name",
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            color = Color.Gray, // Dark Blue/Gray
+            color = Color.Gray,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         
@@ -338,8 +330,8 @@ fun CreateRoutineScreen(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFF333333), // Dark background input like image
-                unfocusedContainerColor = Color(0xFF333333),
+                focusedContainerColor = Color.White.copy(alpha = 0.1f),
+                unfocusedContainerColor = Color.White.copy(alpha = 0.1f),
                 focusedBorderColor = Color.Transparent,
                 unfocusedBorderColor = Color.Transparent,
                 focusedTextColor = Color.White,
@@ -353,14 +345,14 @@ fun CreateRoutineScreen(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            border = BorderStroke(1.dp, Color(0xFFE0E0E0))
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
+            border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f))
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "Add Exercise",
                     fontSize = 12.sp,
-                    color = Color.Gray, // Dark Blue/Gray
+                    color = Color.Gray,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
@@ -385,23 +377,23 @@ fun CreateRoutineScreen(
                                 .fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color.LightGray,
-                                unfocusedBorderColor = Color.LightGray,
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                focusedTextColor = Color.Black,
-                                unfocusedTextColor = Color.Black
+                                focusedBorderColor = Color.Gray,
+                                unfocusedBorderColor = Color.Gray,
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
                             )
                         )
 
                         ExposedDropdownMenu(
                             expanded = expanded,
                             onDismissRequest = { expanded = false },
-                            modifier = Modifier.background(Color.White)
+                            modifier = Modifier.background(Color(0xFF2C2C2C))
                         ) {
                             exercises.forEach { exercise ->
                                 DropdownMenuItem(
-                                    text = { Text(text = exercise, color = Color.Black) },
+                                    text = { Text(text = exercise, color = Color.White) },
                                     onClick = {
                                         selectedExercise = exercise
                                         expanded = false
@@ -421,14 +413,14 @@ fun CreateRoutineScreen(
                                 selectedExercise = null
                             }
                         },
-                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFFE3F2FD)), // Light blue
+                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = WorkoutBlue),
                         shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.size(56.dp) // Standard height for TextField
+                        modifier = Modifier.size(56.dp)
                     ) {
                         Icon(
                             Icons.Filled.Add, 
                             contentDescription = "Add", 
-                            tint = Color(0xFF1976D2) // Darker blue
+                            tint = Color.White
                         )
                     }
                 }
@@ -446,7 +438,7 @@ fun CreateRoutineScreen(
                 Icon(
                     imageVector = Icons.Default.FitnessCenter,
                     contentDescription = null,
-                    tint = Color.LightGray,
+                    tint = Color.DarkGray,
                     modifier = Modifier.size(48.dp)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -463,20 +455,27 @@ fun CreateRoutineScreen(
                 items(addedExercises) { exercise ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
                         shape = RoundedCornerShape(8.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
                          Text(
                              text = exercise,
                              modifier = Modifier.padding(16.dp),
-                             color = Color.Black
+                             color = Color.White
                          )
                     }
                 }
             }
         }
     }
+}
+
+// Extension to simulate dashed border
+fun Modifier.dashedBorder(width: androidx.compose.ui.unit.Dp, color: Color, shape: androidx.compose.ui.graphics.Shape): Modifier {
+    // This is a placeholder since drawing a custom dashed border in Compose requires more boilerplate.
+    // For now we use a simple border.
+    return this.border(width, color, shape)
 }
 
 @Preview(showBackground = true)
