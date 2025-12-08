@@ -136,82 +136,129 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
 
 @Composable
 fun DayNutritionCard(
-    protein: Double, 
-    carbs: Double, 
-    fats: Double, 
+    protein: Double,
+    carbs: Double,
+    fats: Double,
     offset: Int,
     onPrev: () -> Unit,
     onNext: () -> Unit
 ) {
     val df = DecimalFormat("#.##")
-    
-    val title = when (offset) {
-        0 -> "Today's Nutrition"
-        1 -> "Yesterday's Nutrition"
-        else -> {
-            try {
+
+    val title = remember(offset) {
+        when (offset) {
+            0 -> "Today's Nutrition"
+            1 -> "Yesterday's Nutrition"
+            else -> {
                 val date = LocalDate.now().minusDays(offset.toLong())
-                date.format(DateTimeFormatter.ofPattern("MMM d Nutrition", Locale.getDefault()))
-            } catch (e: Exception) {
-                "Nutrition History"
+                val formatter = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
+                "${date.format(formatter)} Nutrition"
             }
         }
     }
 
     Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Header with Arrows
             Row(
-                verticalAlignment = Alignment.CenterVertically, 
-                horizontalArrangement = Arrangement.SpaceBetween, 
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                IconButton(onClick = onPrev, enabled = offset < 30) { 
-                    Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Day", tint = if (offset < 30) Color.White else Color.Gray) 
-                }
-                
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.PieChart, contentDescription = "Nutrition Chart", tint = Color.Green, modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                IconButton(onClick = onPrev) {
+                    Icon(
+                        Icons.Default.ChevronLeft,
+                        contentDescription = "Previous Day",
+                        tint = Color.Gray
+                    )
                 }
 
-                IconButton(onClick = onNext, enabled = offset > 0) { 
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.ChevronRight, 
-                        contentDescription = "Next Day", 
-                        tint = if (offset > 0) Color.White else Color.Gray
-                    ) 
+                        Icons.Default.PieChart,
+                        contentDescription = null,
+                        tint = Color(0xFF00E676),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = title,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                IconButton(onClick = onNext, enabled = offset > 0) {
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = "Next Day",
+                        tint = if (offset > 0) Color.Gray else Color.DarkGray
+                    )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Stats
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    val approxCalories = (protein * 4) + (carbs * 4) + (fats * 9)
-                    Text("${approxCalories.toInt()}", style = MaterialTheme.typography.headlineSmall, color = Color.Green)
-                    Text("CALORIES", style = MaterialTheme.typography.bodySmall)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${df.format(protein)}g", style = MaterialTheme.typography.headlineSmall, color = Color.White)
-                    Text("Protein", style = MaterialTheme.typography.bodySmall)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${df.format(carbs)}g", style = MaterialTheme.typography.headlineSmall, color = Color.White)
-                    Text("Carbs", style = MaterialTheme.typography.bodySmall)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${df.format(fats)}g", style = MaterialTheme.typography.headlineSmall, color = Color.White)
-                    Text("Fats", style = MaterialTheme.typography.bodySmall)
-                }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Stats Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                val approxCalories = (protein * 4) + (carbs * 4) + (fats * 9)
+                
+                NutritionItem(
+                    value = approxCalories.toInt().toString(),
+                    label = "CALORIES",
+                    valueColor = Color(0xFF00E676),
+                    labelColor = Color.Gray
+                )
+
+                NutritionItem(
+                    value = df.format(protein),
+                    label = "Protein (g)",
+                    valueColor = Color.White,
+                    labelColor = Color.Gray
+                )
+
+                NutritionItem(
+                    value = df.format(carbs),
+                    label = "Carbs (g)",
+                    valueColor = Color.White,
+                    labelColor = Color.Gray
+                )
+
+                NutritionItem(
+                    value = df.format(fats),
+                    label = "Fats (g)",
+                    valueColor = Color.White,
+                    labelColor = Color.Gray
+                )
             }
+            Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+}
+
+@Composable
+fun NutritionItem(value: String, label: String, valueColor: Color, labelColor: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = valueColor
+        )
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = labelColor,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
@@ -326,13 +373,44 @@ fun TodayMealsCard(consumedFoods: List<LoggedFood>, offset: Int) {
 @Composable
 fun ConsumedFoodItem(consumedFood: LoggedFood) {
     val df = DecimalFormat("#.##")
-    val protein = consumedFood.protein
-    val carbs = consumedFood.carbs
-    val fats = consumedFood.fats
+    
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = formatFoodName(consumedFood.name),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier.weight(1f).padding(end = 8.dp)
+            )
+            Text(
+                text = "${consumedFood.weight}g",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray
+            )
+        }
 
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text = "${formatFoodName(consumedFood.name)} (${consumedFood.weight}g)")
-        Text(text = "P: ${df.format(protein)}g, C: ${df.format(carbs)}g, F: ${df.format(fats)}g")
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+             Text(
+                text = "${consumedFood.calories.toInt()} kcal",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Green
+            )
+            Text(
+                text = "P: ${df.format(consumedFood.protein)}g  C: ${df.format(consumedFood.carbs)}g  F: ${df.format(consumedFood.fats)}g",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.LightGray
+            )
+        }
     }
 }
 

@@ -4,10 +4,15 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
+import com.application.metriq.data.dao.WorkoutRoutineDao
+import com.application.metriq.data.entity.WorkoutRoutine
 
-@Database(entities = [LoggedFood::class], version = 1)
+@Database(entities = [LoggedFood::class, WorkoutRoutine::class], version = 3)
+@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun loggedFoodDao(): LoggedFoodDao
+    abstract fun workoutRoutineDao(): WorkoutRoutineDao
 
     companion object {
         @Volatile
@@ -19,7 +24,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "metriq_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration() // Handling migration simply for now
+                .build()
                 INSTANCE = instance
                 instance
             }

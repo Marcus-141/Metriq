@@ -100,9 +100,15 @@ class FoodNutritionViewModel(application: Application) : AndroidViewModel(applic
             val timestamp = if (offset == 0) {
                 System.currentTimeMillis()
             } else {
-                val (startOfDay, _) = getStartEndOfDay(offset)
-                // Use noon (12:00 PM) of the past date to be safe
-                startOfDay + 43200000L 
+                try {
+                    val zoneId = ZoneId.systemDefault()
+                    val targetDate = LocalDate.now(zoneId).minusDays(offset.toLong())
+                    // Set the time to 12:00 PM to ensure it falls within the day's start/end query range
+                    targetDate.atTime(12, 0).atZone(zoneId).toInstant().toEpochMilli()
+                } catch (e: Exception) {
+                    Log.e("FoodNutritionViewModel", "Error calculating timestamp for offset $offset", e)
+                    System.currentTimeMillis()
+                }
             }
 
             val loggedFood = LoggedFood(
