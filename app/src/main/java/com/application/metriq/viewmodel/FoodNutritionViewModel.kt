@@ -88,7 +88,7 @@ class FoodNutritionViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    fun addFood(food: Food, weight: Double) {
+    fun addFood(food: Food, weight: Double, offset: Int) {
         viewModelScope.launch {
             val caloriesKcal = (food.foodNutrients.find { it.nutrientName == "Energy" && it.unitName == "KCAL" }?.value ?: 0.0) / 100 * weight
             val protein = (getNutrientValue(food.foodNutrients, "Protein") / 100) * weight
@@ -97,6 +97,14 @@ class FoodNutritionViewModel(application: Application) : AndroidViewModel(applic
 
             val foodName = if (!food.description.isNullOrBlank()) food.description else "Unknown Food"
 
+            val timestamp = if (offset == 0) {
+                System.currentTimeMillis()
+            } else {
+                val (startOfDay, _) = getStartEndOfDay(offset)
+                // Use noon (12:00 PM) of the past date to be safe
+                startOfDay + 43200000L 
+            }
+
             val loggedFood = LoggedFood(
                 name = foodName,
                 calories = caloriesKcal,
@@ -104,7 +112,7 @@ class FoodNutritionViewModel(application: Application) : AndroidViewModel(applic
                 carbs = carbs,
                 fats = fats,
                 weight = weight,
-                timestamp = System.currentTimeMillis()
+                timestamp = timestamp
             )
             dao.insert(loggedFood)
         }

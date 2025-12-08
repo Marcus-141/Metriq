@@ -3,10 +3,15 @@
 package com.application.metriq.ui
 
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -122,7 +127,7 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
             showDialog = false
             selectedFood = null 
         }) { weight ->
-            viewModel.addFood(foodToLog, weight)
+            viewModel.addFood(foodToLog, weight, selectedDayOffset)
             showDialog = false
             selectedFood = null
         }
@@ -248,25 +253,69 @@ fun LogFoodCard(searchQuery: String, onQueryChange: (String) -> Unit, onSearch: 
 
 @Composable
 fun TodayMealsCard(consumedFoods: List<LoggedFood>, offset: Int) {
+    var isExpanded by remember { mutableStateOf(false) }
+
     val title = when (offset) {
         0 -> "Today's Meals"
         1 -> "Yesterday's Meals"
         else -> "Meals"
     }
-    
+
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { isExpanded = !isExpanded } // Toggle on card click
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(bottom = 8.dp))
-            if (consumedFoods.isEmpty()) {
-                Text("No meals logged for this day.", color = Color.Gray)
-            } else {
-                LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
-                    items(consumedFoods) { consumedFood ->
-                        ConsumedFoodItem(consumedFood = consumedFood)
+            // Header Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                IconButton(onClick = { isExpanded = !isExpanded }) {
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
+                        contentDescription = if (isExpanded) "Collapse" else "Expand",
+                        tint = Color.White
+                    )
+                }
+            }
+
+            // Expandable Content
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically() + fadeIn()
+            ) {
+                // Scrollable container with max height
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 200.dp) // Limit height
+                        .verticalScroll(rememberScrollState()) // Enable scrolling
+                ) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (consumedFoods.isEmpty()) {
+                        Text(
+                            text = "No meals logged.",
+                            color = Color.Gray,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    } else {
+                        consumedFoods.forEach { consumedFood ->
+                            HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            ConsumedFoodItem(consumedFood = consumedFood)
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
                     }
                 }
             }
