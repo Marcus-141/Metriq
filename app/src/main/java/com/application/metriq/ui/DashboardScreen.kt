@@ -3,13 +3,6 @@ package com.application.metriq.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Fastfood
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -22,33 +15,13 @@ import com.application.metriq.ui.theme.MetriqTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(navController: NavController) {
-    Scaffold(
-        bottomBar = {
-            BottomAppBar {
-                IconButton(onClick = { navController.navigate("dashboard") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.Home, contentDescription = "Dashboard")
-                }
-                IconButton(onClick = { navController.navigate("workout") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.FitnessCenter, contentDescription = "Workout")
-                }
-                IconButton(onClick = { navController.navigate("food") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.Fastfood, contentDescription = "Food")
-                }
-                IconButton(onClick = { navController.navigate("profile") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.Person, contentDescription = "Profile")
-                }
-            }
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Chart will be here")
-            }
+    Column(
+        modifier = Modifier
+            .fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Chart will be here")
         }
     }
 }

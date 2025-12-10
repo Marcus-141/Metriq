@@ -5,7 +5,6 @@ package com.application.metriq.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -29,41 +27,32 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.application.metriq.data.entity.WorkoutRoutine
 import com.application.metriq.ui.theme.MetriqTheme
-import com.application.metriq.ui.theme.LogoCyan
 import com.application.metriq.viewmodel.WorkoutViewModel
 
-// Define the Workout Blue color locally or use the one from the theme if available
 val WorkoutBlue = Color(0xFF2962FF)
 
 @Composable
 fun WorkoutScreen(navController: NavController, viewModel: WorkoutViewModel = viewModel()) {
     var isCreatingRoutine by remember { mutableStateOf(false) }
     
-    Scaffold(
-        bottomBar = {
-            MetriqBottomBar(navController = navController, currentRoute = "workout")
-        }
-    ) { innerPadding ->
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            if (isCreatingRoutine) {
-                CreateRoutineScreen(
-                    onBack = { isCreatingRoutine = false },
-                    onSave = { name, exercises ->
-                        viewModel.addRoutine(name, exercises)
-                        isCreatingRoutine = false
-                    }
-                )
-            } else {
-                WorkoutListScreen(
-                    viewModel = viewModel,
-                    onCreateRoutine = { isCreatingRoutine = true }
-                )
-            }
+    // The Scaffold has been removed. The content is now managed by the root Scaffold in MainScreen.
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        if (isCreatingRoutine) {
+            CreateRoutineScreen(
+                onBack = { isCreatingRoutine = false },
+                onSave = { name, exercises ->
+                    viewModel.addRoutine(name, exercises)
+                    isCreatingRoutine = false
+                }
+            )
+        } else {
+            WorkoutListScreen(
+                viewModel = viewModel,
+                onCreateRoutine = { isCreatingRoutine = true }
+            )
         }
     }
 }
@@ -137,15 +126,13 @@ fun WorkoutListScreen(
                     }
                 }
                 
-                // Decorative triangle/shape
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
                     contentDescription = null,
                     modifier = Modifier
                         .size(120.dp)
                         .align(Alignment.CenterEnd)
-                        .offset(x = 20.dp)
-                        .padding(end = 0.dp),
+                        .offset(x = 20.dp),
                     tint = Color.White.copy(alpha = 0.1f)
                 )
             }
@@ -153,7 +140,6 @@ fun WorkoutListScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // My Routines Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -169,7 +155,6 @@ fun WorkoutListScreen(
             TextButton(
                 onClick = onCreateRoutine,
                 colors = ButtonDefaults.textButtonColors(contentColor = WorkoutBlue),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                 modifier = Modifier.background(WorkoutBlue.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -180,7 +165,6 @@ fun WorkoutListScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Routines List
         if (routines.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -250,7 +234,6 @@ fun CreateRoutineScreen(
     onSave: (String, List<String>) -> Unit
 ) {
     var routineName by remember { mutableStateOf("") }
-    // List of exercises
     val exercises = listOf(
         "Bench Press (Chest)",
         "Push Up (Chest)",
@@ -274,7 +257,6 @@ fun CreateRoutineScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -303,8 +285,7 @@ fun CreateRoutineScreen(
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF28a745)),
-                shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                shape = RoundedCornerShape(8.dp)
             ) {
                 Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
@@ -314,7 +295,6 @@ fun CreateRoutineScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Routine Name Input
         Text(
             text = "Routine Name",
             fontSize = 14.sp,
@@ -341,7 +321,6 @@ fun CreateRoutineScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Add Exercise Section
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
@@ -361,7 +340,6 @@ fun CreateRoutineScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.height(IntrinsicSize.Min)
                 ) {
-                    // Dropdown
                     ExposedDropdownMenuBox(
                         expanded = expanded,
                         onExpandedChange = { expanded = !expanded },
@@ -405,7 +383,6 @@ fun CreateRoutineScreen(
                     
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    // Plus Button
                     FilledIconButton(
                         onClick = { 
                             selectedExercise?.let {
@@ -429,7 +406,6 @@ fun CreateRoutineScreen(
         
         Spacer(modifier = Modifier.height(24.dp))
         
-        // Empty State or List of Added Exercises
         if (addedExercises.isEmpty()) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -469,13 +445,6 @@ fun CreateRoutineScreen(
             }
         }
     }
-}
-
-// Extension to simulate dashed border
-fun Modifier.dashedBorder(width: androidx.compose.ui.unit.Dp, color: Color, shape: androidx.compose.ui.graphics.Shape): Modifier {
-    // This is a placeholder since drawing a custom dashed border in Compose requires more boilerplate.
-    // For now we use a simple border.
-    return this.border(width, color, shape)
 }
 
 @Preview(showBackground = true)

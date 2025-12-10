@@ -24,16 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import com.application.metriq.data.LoggedFood
 import com.application.metriq.network.Food
-import com.application.metriq.ui.theme.MetriqTheme
 import com.application.metriq.viewmodel.FoodNutritionViewModel
 import java.text.DecimalFormat
 import java.time.LocalDate
@@ -53,59 +49,48 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
     val totalProtein = consumedFoods.sumOf { it.protein }
     val totalCarbs = consumedFoods.sumOf { it.carbs }
     val totalFats = consumedFoods.sumOf { it.fats }
-    
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
 
-    Scaffold(
-        bottomBar = {
-            MetriqBottomBar(navController = navController, currentRoute = currentRoute)
-        }
-    ) { innerPadding ->
-        Surface(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-            ) {
-                DayNutritionCard(
-                    protein = totalProtein, 
-                    carbs = totalCarbs, 
-                    fats = totalFats,
-                    offset = selectedDayOffset,
-                    onPrev = { 
-                        if (selectedDayOffset < 30) {
-                            viewModel.changeDay(1)
-                        }
-                    },
-                    onNext = { 
-                        if (selectedDayOffset > 0) {
-                            viewModel.changeDay(-1)
-                        }
-                    }
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                LogFoodCard(searchQuery = searchQuery, onQueryChange = { 
-                    searchQuery = it
-                    viewModel.searchFoods(it)
-                }, onSearch = { 
-                    Log.d("FoodNutritionScreen", "Search button clicked with query: $searchQuery")
-                    viewModel.searchFoods(searchQuery) 
-                })
-                Spacer(modifier = Modifier.height(16.dp))
-                LazyColumn(modifier = Modifier.weight(1f)) {
-                    items(searchResults) { food ->
-                        FoodListItem(food = food, onClick = {
-                            selectedFood = food
-                            showDialog = true
-                        })
-                    }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+    ) {
+        DayNutritionCard(
+            protein = totalProtein, 
+            carbs = totalCarbs, 
+            fats = totalFats,
+            offset = selectedDayOffset,
+            onPrev = { 
+                if (selectedDayOffset < 30) {
+                    viewModel.changeDay(1)
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                TodayMealsCard(consumedFoods = consumedFoods, offset = selectedDayOffset)
+            },
+            onNext = { 
+                if (selectedDayOffset > 0) {
+                    viewModel.changeDay(-1)
+                }
+            }
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        LogFoodCard(searchQuery = searchQuery, onQueryChange = { 
+            searchQuery = it
+            viewModel.searchFoods(it)
+        }, onSearch = { 
+            Log.d("FoodNutritionScreen", "Search button clicked with query: $searchQuery")
+            viewModel.searchFoods(searchQuery) 
+        })
+        Spacer(modifier = Modifier.height(16.dp))
+        LazyColumn(modifier = Modifier.weight(1f)) {
+            items(searchResults) { food ->
+                FoodListItem(food = food, onClick = {
+                    selectedFood = food
+                    showDialog = true
+                })
             }
         }
+        Spacer(modifier = Modifier.height(16.dp))
+        TodayMealsCard(consumedFoods = consumedFoods, offset = selectedDayOffset)
     }
     
     val foodToLog = selectedFood
@@ -288,9 +273,9 @@ fun TodayMealsCard(consumedFoods: List<LoggedFood>, offset: Int) {
     var isExpanded by remember { mutableStateOf(false) }
 
     val title = when (offset) {
-        0 -> "Today's Meals"
-        1 -> "Yesterday's Meals"
-        else -> "Meals"
+        0 -> "Today's Consumption"
+        1 -> "Yesterday's Consumption"
+        else -> "Food Consumption"
     }
 
     Card(
@@ -356,10 +341,32 @@ fun TodayMealsCard(consumedFoods: List<LoggedFood>, offset: Int) {
 }
 
 @Composable
+private fun MacroItem(label: String, value: String, color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = "$label:",
+            color = Color.Gray,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.alignByBaseline()
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = value,
+            color = color,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.alignByBaseline()
+        )
+    }
+}
+
+@Composable
 fun ConsumedFoodItem(consumedFood: LoggedFood) {
     val df = DecimalFormat("#.##")
-    
+
     Column(modifier = Modifier.fillMaxWidth()) {
+        // Top row: Food name and weight
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -373,27 +380,39 @@ fun ConsumedFoodItem(consumedFood: LoggedFood) {
                 modifier = Modifier.weight(1f).padding(end = 8.dp)
             )
             Text(
-                text = "${consumedFood.weight}g",
+                text = "${df.format(consumedFood.weight)}g",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Gray
             )
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
+        // Bottom row: Macros, separated and color-coded
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-             Text(
-                text = "${consumedFood.calories.toInt()} kcal",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Green
+            MacroItem(
+                label = "Kcal",
+                value = consumedFood.calories.toInt().toString(),
+                color = Color(0xFF00E676) // Bright Green
             )
-            Text(
-                text = "P: ${df.format(consumedFood.protein)}g  C: ${df.format(consumedFood.carbs)}g  F: ${df.format(consumedFood.fats)}g",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.LightGray
+            MacroItem(
+                label = "P",
+                value = "${df.format(consumedFood.protein)}g",
+                color = Color(0xFF29B6F6) // Light Blue
+            )
+            MacroItem(
+                label = "C",
+                value = "${df.format(consumedFood.carbs)}g",
+                color = Color(0xFF43A047) // Green
+            )
+            MacroItem(
+                label = "F",
+                value = "${df.format(consumedFood.fats)}g",
+                color = Color(0xFFEF5350) // Red
             )
         }
     }

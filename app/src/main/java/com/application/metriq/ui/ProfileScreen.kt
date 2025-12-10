@@ -6,10 +6,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Fastfood
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -60,108 +56,85 @@ fun ProfileScreen(navController: NavController) {
         tempActivityLevel = activityLevel
     }
 
-    Scaffold(
-        bottomBar = {
-            BottomAppBar(containerColor = Color.Black) {
-                IconButton(onClick = { navController.navigate("dashboard") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.Home, contentDescription = "Dashboard", tint = Color.White)
-                }
-                IconButton(onClick = { navController.navigate("workout") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.FitnessCenter, contentDescription = "Workout", tint = Color.White)
-                }
-                IconButton(onClick = { navController.navigate("food") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.Fastfood, contentDescription = "Food", tint = Color.White)
-                }
-                IconButton(onClick = { navController.navigate("profile") }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.Person, contentDescription = "Profile", tint = Color.White)
-                }
-            }
-        }
-    ) { innerPadding ->
-        Surface(
-            modifier = Modifier.fillMaxSize().padding(innerPadding)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-            ) {
-                Text(
-                    text = "Your Profile",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+    ) {
+        Text(
+            text = "Your Profile",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
-                ProfileInfoCard(
-                    isEditing = isEditing,
-                    weight = if (isEditing) tempWeight else weight,
-                    height = if (isEditing) tempHeight else height,
-                    age = if (isEditing) tempAge else age,
-                    gender = if (isEditing) tempGender else gender,
-                    activityLevel = if (isEditing) tempActivityLevel else activityLevel,
-                    onWeightChange = { tempWeight = it },
-                    onHeightChange = { tempHeight = it },
-                    onAgeChange = { tempAge = it },
-                    onGenderChange = { tempGender = it },
-                    onActivityLevelChange = { tempActivityLevel = it }
-                )
+        ProfileInfoCard(
+            isEditing = isEditing,
+            weight = if (isEditing) tempWeight else weight,
+            height = if (isEditing) tempHeight else height,
+            age = if (isEditing) tempAge else age,
+            gender = if (isEditing) tempGender else gender,
+            activityLevel = if (isEditing) tempActivityLevel else activityLevel,
+            onWeightChange = { tempWeight = it },
+            onHeightChange = { tempHeight = it },
+            onAgeChange = { tempAge = it },
+            onGenderChange = { tempGender = it },
+            onActivityLevelChange = { tempActivityLevel = it }
+        )
 
-                Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-                GoalsCard(
-                    protein = protein,
-                    bmr = bmr,
-                    tee = tee
-                )
+        GoalsCard(
+            protein = protein,
+            bmr = bmr,
+            tee = tee
+        )
 
-                Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.weight(1f))
 
-                EditSaveButton(
-                    isEditing = isEditing,
-                    onClick = {
-                        if (isEditing) {
-                            scope.launch {
-                                val weightValue = tempWeight.toDoubleOrNull() ?: 0.0
-                                val heightValue = tempHeight.toDoubleOrNull() ?: 0.0
-                                val ageValue = tempAge.toIntOrNull() ?: 0
-                                
-                                val bmrValue = if (tempGender == "Male") {
-                                    (10 * weightValue) + (6.25 * heightValue) - (5 * ageValue) + 5
-                                } else {
-                                    (10 * weightValue) + (6.25 * heightValue) - (5 * ageValue) - 161
-                                }
-
-                                val activityMultiplier = when (tempActivityLevel) {
-                                    "Sedentary" -> 1.2
-                                    "Lightly Active" -> 1.375
-                                    "Moderately Active" -> 1.55
-                                    "Very Active" -> 1.725
-                                    "Extra Active" -> 1.9
-                                    else -> 1.2
-                                }
-
-                                val teeValue = bmrValue * activityMultiplier
-                                val proteinValue = (weightValue * 1.8).toInt().toString()
-
-                                sessionManager.saveProfileData(
-                                    tempWeight, 
-                                    tempHeight, 
-                                    tempAge, 
-                                    tempGender, 
-                                    tempActivityLevel,
-                                    proteinValue,
-                                    bmrValue.toInt().toString(),
-                                    teeValue.toInt().toString()
-                                )
-                            }
+        EditSaveButton(
+            isEditing = isEditing,
+            onClick = {
+                if (isEditing) {
+                    scope.launch {
+                        val weightValue = tempWeight.toDoubleOrNull() ?: 0.0
+                        val heightValue = tempHeight.toDoubleOrNull() ?: 0.0
+                        val ageValue = tempAge.toIntOrNull() ?: 0
+                        
+                        val bmrValue = if (tempGender == "Male") {
+                            (10 * weightValue) + (6.25 * heightValue) - (5 * ageValue) + 5
+                        } else {
+                            (10 * weightValue) + (6.25 * heightValue) - (5 * ageValue) - 161
                         }
-                        isEditing = !isEditing
+
+                        val activityMultiplier = when (tempActivityLevel) {
+                            "Sedentary" -> 1.2
+                            "Lightly Active" -> 1.375
+                            "Moderately Active" -> 1.55
+                            "Very Active" -> 1.725
+                            "Extra Active" -> 1.9
+                            else -> 1.2
+                        }
+
+                        val teeValue = bmrValue * activityMultiplier
+                        val proteinValue = (weightValue * 1.8).toInt().toString()
+
+                        sessionManager.saveProfileData(
+                            tempWeight, 
+                            tempHeight, 
+                            tempAge, 
+                            tempGender, 
+                            tempActivityLevel,
+                            proteinValue,
+                            bmrValue.toInt().toString(),
+                            teeValue.toInt().toString()
+                        )
                     }
-                )
+                }
+                isEditing = !isEditing
             }
-        }
+        )
     }
 }
 
