@@ -5,8 +5,8 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
-import com.application.metriq.data.entity.WorkoutRoutine
 import kotlinx.coroutines.flow.Flow
+import com.application.metriq.data.entity.WorkoutRoutine
 
 @Dao
 interface WorkoutRoutineDao {

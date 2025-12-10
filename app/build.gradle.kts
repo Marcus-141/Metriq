@@ -55,6 +55,10 @@ android {
     }
 }
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     // Android KTX for core functionalities
     implementation(libs.androidx.core.ktx)

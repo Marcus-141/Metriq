@@ -5,10 +5,11 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.application.metriq.data.dao.LoggedFoodDao
 import com.application.metriq.data.dao.WorkoutRoutineDao
 import com.application.metriq.data.entity.WorkoutRoutine
 
-@Database(entities = [LoggedFood::class, WorkoutRoutine::class], version = 3)
+@Database(entities = [LoggedFood::class, WorkoutRoutine::class], version = 3, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun loggedFoodDao(): LoggedFoodDao

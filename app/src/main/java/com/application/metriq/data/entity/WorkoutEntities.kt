@@ -1,0 +1,28 @@
+package com.application.metriq.data.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import androidx.room.TypeConverters
+import com.application.metriq.data.Converters
+
+// Defines a single set within an exercise (e.g., 10 reps at 50kg)
+data class ExerciseSet(
+    var reps: String = "",
+    var weight: String = ""
+)
+
+// Defines an exercise within a routine (e.g., Bench Press) and its list of sets
+data class RoutineExercise(
+    val name: String,
+    val sets: MutableList<ExerciseSet> = mutableListOf(ExerciseSet())
+)
+
+// Defines the complete workout routine
+@Entity(tableName = "workout_routines")
+@TypeConverters(Converters::class)
+data class WorkoutRoutine(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val name: String,
+    val exercises: MutableList<RoutineExercise> = mutableListOf()
+)
