@@ -185,7 +185,7 @@ fun WorkoutListScreen(
             
             Button(
                 onClick = onCreateRoutine,
-                colors = ButtonDefaults.buttonColors(containerColor = WorkoutBlue),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE6FFFF)),
                 shape = RoundedCornerShape(8.dp),
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Black)
