@@ -1,8 +1,10 @@
 package com.application.metriq.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,9 +21,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,24 +42,41 @@ val WorkoutBlue = Color(0xFF2962FF)
 
 @Composable
 fun WorkoutScreen(navController: NavController, viewModel: WorkoutViewModel = viewModel()) {
-    var isCreatingRoutine by remember { mutableStateOf(false) }
+    var isCreatingOrEditingRoutine by remember { mutableStateOf(false) }
+    var selectedRoutine by remember { mutableStateOf<WorkoutRoutine?>(null) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        if (isCreatingRoutine) {
+        if (isCreatingOrEditingRoutine) {
             CreateRoutineScreen(
-                onBack = { isCreatingRoutine = false },
-                onSave = { name, exercises ->
-                    viewModel.addRoutine(name, exercises)
-                    isCreatingRoutine = false
+                routine = selectedRoutine,
+                onBack = {
+                    isCreatingOrEditingRoutine = false
+                    selectedRoutine = null
+                },
+                onSave = { routine ->
+                    if (routine.id == 0L) {
+                        viewModel.addRoutine(routine.name, routine.exercises)
+                    } else {
+                        viewModel.updateRoutine(routine)
+                    }
+                    isCreatingOrEditingRoutine = false
+                    selectedRoutine = null
                 }
             )
         } else {
             WorkoutListScreen(
                 viewModel = viewModel,
-                onCreateRoutine = { isCreatingRoutine = true }
+                onCreateRoutine = { 
+                    selectedRoutine = null
+                    isCreatingOrEditingRoutine = true 
+                },
+                onEditRoutine = { routine ->
+                    selectedRoutine = routine
+                    isCreatingOrEditingRoutine = true
+                }
             )
         }
     }
@@ -65,7 +85,8 @@ fun WorkoutScreen(navController: NavController, viewModel: WorkoutViewModel = vi
 @Composable
 fun WorkoutListScreen(
     viewModel: WorkoutViewModel,
-    onCreateRoutine: () -> Unit
+    onCreateRoutine: () -> Unit,
+    onEditRoutine: (WorkoutRoutine) -> Unit
 ) {
     val routines by viewModel.routines.collectAsState()
 
@@ -189,7 +210,7 @@ fun WorkoutListScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(routines) { routine ->
-                    RoutineItem(routine = routine)
+                    RoutineItem(routine = routine, onClick = { onEditRoutine(routine) })
                 }
             }
         }
@@ -197,9 +218,11 @@ fun WorkoutListScreen(
 }
 
 @Composable
-fun RoutineItem(routine: WorkoutRoutine) {
+fun RoutineItem(routine: WorkoutRoutine, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -225,9 +248,6 @@ fun RoutineItem(routine: WorkoutRoutine) {
                     color = Color.Gray
                 )
             }
-            IconButton(onClick = { /* TODO */ }) {
-                Icon(Icons.Default.PlayArrow, contentDescription = "Start", tint = WorkoutBlue)
-            }
         }
     }
 }
@@ -235,17 +255,19 @@ fun RoutineItem(routine: WorkoutRoutine) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateRoutineScreen(
+    routine: WorkoutRoutine?,
     onBack: () -> Unit,
-    onSave: (String, List<RoutineExercise>) -> Unit
+    onSave: (WorkoutRoutine) -> Unit
 ) {
-    var routineName by remember { mutableStateOf("") }
+    var routineName by remember { mutableStateOf(routine?.name ?: "") }
     val exercises = listOf(
         "Bench Press", "Push Up", "Pull Up", "Barbell Row", "Squat", "Deadlift",
         "Overhead Press", "Bicep Curl", "Tricep Extension", "Plank", "Running"
     )
     var expanded by remember { mutableStateOf(false) }
     var selectedExercise by remember { mutableStateOf<String?>(null) }
-    var addedExercises by remember { mutableStateOf<List<RoutineExercise>>(emptyList()) }
+    val addedExercises = remember { mutableStateListOf<RoutineExercise>().apply { addAll(routine?.exercises ?: emptyList()) } }
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -266,16 +288,23 @@ fun CreateRoutineScreen(
                 Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
             }
             Text(
-                text = "New Routine",
+                text = if (routine == null) "New Routine" else "Edit Routine",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Button(
                 onClick = { 
-                    if (routineName.isNotBlank() && addedExercises.isNotEmpty()) {
-                        onSave(routineName, addedExercises)
+                    if (routineName.isBlank()) {
+                        Toast.makeText(context, "Please enter a routine name.", Toast.LENGTH_SHORT).show()
+                        return@Button
                     }
+                    if (addedExercises.isEmpty()) {
+                        Toast.makeText(context, "Please add at least one exercise.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    val newRoutine = routine?.copy(name = routineName, exercises = addedExercises) ?: WorkoutRoutine(name = routineName, exercises = addedExercises)
+                    onSave(newRoutine)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF28a745)),
                 shape = RoundedCornerShape(8.dp)
@@ -378,7 +407,7 @@ fun CreateRoutineScreen(
                     FilledIconButton(
                         onClick = { 
                             selectedExercise?.let {
-                                addedExercises = addedExercises + RoutineExercise(name = it)
+                                addedExercises.add(RoutineExercise(name = it))
                                 selectedExercise = null
                             }
                         },
@@ -403,10 +432,13 @@ fun CreateRoutineScreen(
                 AddedExerciseCard(
                     exercise = exercise, 
                     onExerciseUpdate = { updatedExercise ->
-                        addedExercises = addedExercises.map { if (it.name == exercise.name) updatedExercise else it }
+                        val index = addedExercises.indexOfFirst { it.name == updatedExercise.name }
+                        if (index != -1) {
+                            addedExercises[index] = updatedExercise
+                        }
                     }, 
                     onRemoveExercise = {
-                        addedExercises = addedExercises.filter { it.name != exercise.name }
+                        addedExercises.remove(exercise)
                     }
                 )
             }
