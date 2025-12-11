@@ -9,26 +9,26 @@ import com.application.metriq.data.entity.RoutineExercise
 import com.application.metriq.data.entity.WorkoutRoutine
 import com.application.metriq.data.loadExercisesFromAssets
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class WorkoutViewModel(application: Application) : AndroidViewModel(application) {
     private val workoutRoutineDao = AppDatabase.getDatabase(application).workoutRoutineDao()
-    private var allExercises: List<ExerciseJson>? = null
+    
+    private val _allExercises = MutableStateFlow<List<ExerciseJson>>(emptyList())
+    val allExercises: StateFlow<List<ExerciseJson>> = _allExercises.asStateFlow()
 
     val routines: StateFlow<List<WorkoutRoutine>> = workoutRoutineDao.getAllRoutines()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    suspend fun getAllExercises(): List<ExerciseJson> {
-        if (allExercises == null) {
-            withContext(Dispatchers.IO) {
-                allExercises = loadExercisesFromAssets(getApplication())
-            }
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            _allExercises.value = loadExercisesFromAssets(getApplication())
         }
-        return allExercises ?: emptyList()
     }
 
     fun addRoutine(name: String, exercises: List<RoutineExercise>) {

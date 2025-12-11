@@ -185,7 +185,7 @@ fun WorkoutListScreen(
             
             Button(
                 onClick = onCreateRoutine,
-                colors = ButtonDefaults.buttonColors(containerColor = LogoCyan),
+                colors = ButtonDefaults.buttonColors(containerColor = WorkoutBlue),
                 shape = RoundedCornerShape(8.dp),
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Black)
@@ -268,12 +268,11 @@ fun CreateRoutineScreen(
 ) {
     var routineName by remember { mutableStateOf(routine?.name ?: "") }
     
-    // START: Updated logic for exercise search
+    //Updated logic for exercise search
     val context = LocalContext.current
-    //Load exercises
-    val allExercises by produceState<List<ExerciseJson>>(initialValue = emptyList()) {
-        value = viewModel.getAllExercises()
-    }
+    
+    //Collect exercises from ViewModel
+    val allExercises by viewModel.allExercises.collectAsState()
     val exercises = remember(allExercises) { allExercises.map { it.name } }
     
     //Search state
@@ -281,12 +280,13 @@ fun CreateRoutineScreen(
     var expanded by remember { mutableStateOf(false) }
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
 
-    //Filter logic
-    val filteredExercises = remember(searchText, exercises) {
-        if (searchText.isBlank()) emptyList()
-        else exercises.filter { it.contains(searchText, ignoreCase = true) }
+    //Filter logic - Optimized with derivedStateOf
+    val filteredExercises by remember {
+        derivedStateOf {
+            if (searchText.isBlank()) emptyList()
+            else exercises.filter { it.contains(searchText, ignoreCase = true) }
+        }
     }
-    // END: Updated logic
 
     val addedExercises = remember { mutableStateListOf<RoutineExercise>().apply { addAll(routine?.exercises ?: emptyList()) } }
 
@@ -295,7 +295,6 @@ fun CreateRoutineScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -365,7 +364,7 @@ fun CreateRoutineScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // START: REPLACED CARD FOR SEARCH BAR
+        //REPLACED CARD FOR SEARCH BAR
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
@@ -442,7 +441,7 @@ fun CreateRoutineScreen(
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
         
         LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
