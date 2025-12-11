@@ -11,6 +11,29 @@ data class LoggedFood(
     val protein: Double,
     val carbs: Double,
     val fats: Double,
+    
+    // Vitamins
+    val vitaminD: Double = 0.0,
+    val vitaminB12: Double = 0.0,
+    val folate: Double = 0.0,
+    val vitaminA: Double = 0.0,
+    val vitaminC: Double = 0.0,
+    
+    // Minerals
+    val iron: Double = 0.0,
+    val calcium: Double = 0.0,
+    val magnesium: Double = 0.0,
+    val iodine: Double = 0.0,
+    val zinc: Double = 0.0,
+    
+    // Other Micronutrients
+    val fiber: Double = 0.0,
+    val sugar: Double = 0.0,
+    val sodium: Double = 0.0,
+    val cholesterol: Double = 0.0,
+    val potassium: Double = 0.0,
+    val saturatedFat: Double = 0.0,
+
     val weight: Double,
     val timestamp: Long
 )

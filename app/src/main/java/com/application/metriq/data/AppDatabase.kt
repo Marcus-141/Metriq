@@ -10,7 +10,7 @@ import com.application.metriq.data.dao.WorkoutRoutineDao
 import com.application.metriq.data.entity.LoggedFood
 import com.application.metriq.data.entity.WorkoutRoutine
 
-@Database(entities = [WorkoutRoutine::class, LoggedFood::class], version = 4, exportSchema = false)
+@Database(entities = [WorkoutRoutine::class, LoggedFood::class], version = 5, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun workoutRoutineDao(): WorkoutRoutineDao

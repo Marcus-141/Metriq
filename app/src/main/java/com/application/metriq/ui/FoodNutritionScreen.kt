@@ -6,6 +6,8 @@ import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.application.metriq.data.entity.LoggedFood
 import com.application.metriq.network.Food
+import com.application.metriq.viewmodel.DailyNutrients
 import com.application.metriq.viewmodel.FoodNutritionViewModel
 import java.text.DecimalFormat
 import java.time.LocalDate
@@ -45,10 +48,7 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
     
     val consumedFoods by viewModel.consumedFoods.collectAsState()
     val selectedDayOffset by viewModel.selectedDayOffset.collectAsState()
-
-    val totalProtein = consumedFoods.sumOf { it.protein }
-    val totalCarbs = consumedFoods.sumOf { it.carbs }
-    val totalFats = consumedFoods.sumOf { it.fats }
+    val dailyTotals by viewModel.dailyTotals.collectAsState()
 
     Column(
         modifier = Modifier
@@ -56,9 +56,7 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
             .padding(16.dp),
     ) {
         DayNutritionCard(
-            protein = totalProtein, 
-            carbs = totalCarbs, 
-            fats = totalFats,
+            dailyNutrients = dailyTotals,
             offset = selectedDayOffset,
             onPrev = { 
                 if (selectedDayOffset < 30) {
@@ -108,14 +106,13 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
 
 @Composable
 fun DayNutritionCard(
-    protein: Double,
-    carbs: Double,
-    fats: Double,
+    dailyNutrients: DailyNutrients,
     offset: Int,
     onPrev: () -> Unit,
     onNext: () -> Unit
 ) {
     val df = DecimalFormat("#.##")
+    var expanded by remember { mutableStateOf(false) }
 
     val title = remember(offset) {
         when (offset) {
@@ -132,7 +129,9 @@ fun DayNutritionCard(
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded }
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -148,20 +147,30 @@ fun DayNutritionCard(
                     )
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.PieChart,
-                        contentDescription = null,
-                        tint = Color(0xFF00E676),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = title,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.PieChart,
+                            contentDescription = null,
+                            tint = Color(0xFF00E676),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = title,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                    if (!expanded) {
+                        Text(
+                            text = "(Tap for details)",
+                            fontSize = 10.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
                 }
 
                 IconButton(onClick = onNext, enabled = offset > 0) {
@@ -175,42 +184,101 @@ fun DayNutritionCard(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Main Macros Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                val approxCalories = (protein * 4) + (carbs * 4) + (fats * 9)
-                
                 NutritionItem(
-                    value = approxCalories.toInt().toString(),
+                    value = dailyNutrients.calories.toInt().toString(),
                     label = "CALORIES",
                     valueColor = Color(0xFF00E676),
                     labelColor = Color.Gray
                 )
 
                 NutritionItem(
-                    value = df.format(protein),
+                    value = df.format(dailyNutrients.protein),
                     label = "Protein (g)",
                     valueColor = Color.White,
                     labelColor = Color.Gray
                 )
 
                 NutritionItem(
-                    value = df.format(carbs),
+                    value = df.format(dailyNutrients.carbs),
                     label = "Carbs (g)",
                     valueColor = Color.White,
                     labelColor = Color.Gray
                 )
 
                 NutritionItem(
-                    value = df.format(fats),
+                    value = df.format(dailyNutrients.fats),
                     label = "Fats (g)",
                     valueColor = Color.White,
                     labelColor = Color.Gray
                 )
             }
+            
+            // Expandable Micronutrients Section
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(
+                        text = "Micronutrients",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Left Column
+                        Column(modifier = Modifier.weight(1f)) {
+                            MicroNutrientRow("Vitamin D", "${df.format(dailyNutrients.vitaminD)} µg")
+                            MicroNutrientRow("Vitamin B12", "${df.format(dailyNutrients.vitaminB12)} µg")
+                            MicroNutrientRow("Folate", "${df.format(dailyNutrients.folate)} µg")
+                            MicroNutrientRow("Vitamin A", "${df.format(dailyNutrients.vitaminA)} µg")
+                            MicroNutrientRow("Vitamin C", "${df.format(dailyNutrients.vitaminC)} mg")
+                        }
+                        
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        // Right Column
+                        Column(modifier = Modifier.weight(1f)) {
+                            MicroNutrientRow("Iron", "${df.format(dailyNutrients.iron)} mg")
+                            MicroNutrientRow("Calcium", "${df.format(dailyNutrients.calcium)} mg")
+                            MicroNutrientRow("Magnesium", "${df.format(dailyNutrients.magnesium)} mg")
+                            MicroNutrientRow("Iodine", "${df.format(dailyNutrients.iodine)} µg")
+                            MicroNutrientRow("Zinc", "${df.format(dailyNutrients.zinc)} mg")
+                        }
+                    }
+                }
+            }
+            
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+}
+
+@Composable
+fun MicroNutrientRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(text = label, color = Color.Gray, fontSize = 14.sp)
+        Text(text = value, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }
 
