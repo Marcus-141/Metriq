@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.application.metriq.data.AppDatabase
-import com.application.metriq.data.LoggedFood
+import com.application.metriq.data.entity.LoggedFood
 import com.application.metriq.network.Food
 import com.application.metriq.network.FoodNutrient
 import com.application.metriq.network.RetrofitInstance

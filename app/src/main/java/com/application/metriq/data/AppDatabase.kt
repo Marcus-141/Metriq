@@ -7,13 +7,14 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.application.metriq.data.dao.LoggedFoodDao
 import com.application.metriq.data.dao.WorkoutRoutineDao
+import com.application.metriq.data.entity.LoggedFood
 import com.application.metriq.data.entity.WorkoutRoutine
 
-@Database(entities = [LoggedFood::class, WorkoutRoutine::class], version = 3, exportSchema = false)
+@Database(entities = [WorkoutRoutine::class, LoggedFood::class], version = 4, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
-    abstract fun loggedFoodDao(): LoggedFoodDao
     abstract fun workoutRoutineDao(): WorkoutRoutineDao
+    abstract fun loggedFoodDao(): LoggedFoodDao
 
     companion object {
         @Volatile
@@ -26,7 +27,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "metriq_database"
                 )
-                .fallbackToDestructiveMigration() // Handling migration simply for now
+                .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance
                 instance

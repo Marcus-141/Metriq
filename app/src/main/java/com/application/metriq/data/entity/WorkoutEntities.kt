@@ -8,7 +8,8 @@ import com.application.metriq.data.Converters
 // Defines a single set within an exercise (e.g., 10 reps at 50kg)
 data class ExerciseSet(
     var reps: String = "",
-    var weight: String = ""
+    var weight: String = "",
+    var isCompleted: Boolean = false
 )
 
 // Defines an exercise within a routine (e.g., Bench Press) and its list of sets
@@ -17,12 +18,12 @@ data class RoutineExercise(
     val sets: MutableList<ExerciseSet> = mutableListOf(ExerciseSet())
 )
 
-// Defines the complete workout routine
+// Defines the user-created workout routine template
 @Entity(tableName = "workout_routines")
 @TypeConverters(Converters::class)
 data class WorkoutRoutine(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val name: String,
-    val exercises: MutableList<RoutineExercise> = mutableListOf()
+    val exercises: List<RoutineExercise> = emptyList()
 )

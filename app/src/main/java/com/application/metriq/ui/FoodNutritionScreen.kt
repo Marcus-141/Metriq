@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.application.metriq.data.LoggedFood
+import com.application.metriq.data.entity.LoggedFood
 import com.application.metriq.network.Food
 import com.application.metriq.viewmodel.FoodNutritionViewModel
 import java.text.DecimalFormat

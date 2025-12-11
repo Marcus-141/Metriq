@@ -9,16 +9,16 @@ class Converters {
     private val gson = Gson()
 
     @TypeConverter
-    fun fromRoutineExerciseList(value: String?): MutableList<RoutineExercise> {
+    fun fromRoutineExerciseList(value: String?): List<RoutineExercise> {
         if (value == null) {
-            return mutableListOf()
+            return emptyList()
         }
-        val listType = object : TypeToken<MutableList<RoutineExercise>>() {}.type
+        val listType = object : TypeToken<List<RoutineExercise>>() {}.type
         return gson.fromJson(value, listType)
     }
 
     @TypeConverter
-    fun toRoutineExerciseList(list: MutableList<RoutineExercise>): String {
+    fun toRoutineExerciseList(list: List<RoutineExercise>): String {
         return gson.toJson(list)
     }
 }

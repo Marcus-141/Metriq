@@ -1,4 +1,4 @@
-package com.application.metriq.data
+package com.application.metriq.data.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

@@ -18,10 +18,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -29,16 +32,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toSize
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.application.metriq.data.entity.ExerciseJson
 import com.application.metriq.data.entity.ExerciseSet
 import com.application.metriq.data.entity.RoutineExercise
 import com.application.metriq.data.entity.WorkoutRoutine
 import com.application.metriq.ui.theme.MetriqTheme
+import com.application.metriq.ui.theme.LogoCyan
+import com.application.metriq.ui.theme.WorkoutBlue
 import com.application.metriq.viewmodel.WorkoutViewModel
-
-val WorkoutBlue = Color(0xFF2962FF)
 
 @Composable
 fun WorkoutScreen(navController: NavController, viewModel: WorkoutViewModel = viewModel()) {
@@ -52,6 +57,7 @@ fun WorkoutScreen(navController: NavController, viewModel: WorkoutViewModel = vi
         if (isCreatingOrEditingRoutine) {
             CreateRoutineScreen(
                 routine = selectedRoutine,
+                viewModel = viewModel,
                 onBack = {
                     isCreatingOrEditingRoutine = false
                     selectedRoutine = null
@@ -177,14 +183,14 @@ fun WorkoutListScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
             
-            TextButton(
+            Button(
                 onClick = onCreateRoutine,
-                colors = ButtonDefaults.textButtonColors(contentColor = WorkoutBlue),
-                modifier = Modifier.background(WorkoutBlue.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                colors = ButtonDefaults.buttonColors(containerColor = LogoCyan),
+                shape = RoundedCornerShape(8.dp),
             ) {
-                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Black)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("New Routine", fontWeight = FontWeight.Bold)
+                Text("New Routine", color = Color.Black)
             }
         }
 
@@ -256,24 +262,40 @@ fun RoutineItem(routine: WorkoutRoutine, onClick: () -> Unit) {
 @Composable
 fun CreateRoutineScreen(
     routine: WorkoutRoutine?,
+    viewModel: WorkoutViewModel = viewModel(),
     onBack: () -> Unit,
     onSave: (WorkoutRoutine) -> Unit
 ) {
     var routineName by remember { mutableStateOf(routine?.name ?: "") }
-    val exercises = listOf(
-        "Bench Press", "Push Up", "Pull Up", "Barbell Row", "Squat", "Deadlift",
-        "Overhead Press", "Bicep Curl", "Tricep Extension", "Plank", "Running"
-    )
-    var expanded by remember { mutableStateOf(false) }
-    var selectedExercise by remember { mutableStateOf<String?>(null) }
-    val addedExercises = remember { mutableStateListOf<RoutineExercise>().apply { addAll(routine?.exercises ?: emptyList()) } }
+    
+    // START: Updated logic for exercise search
     val context = LocalContext.current
+    //Load exercises
+    val allExercises by produceState<List<ExerciseJson>>(initialValue = emptyList()) {
+        value = viewModel.getAllExercises()
+    }
+    val exercises = remember(allExercises) { allExercises.map { it.name } }
+    
+    //Search state
+    var searchText by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+    var textFieldSize by remember { mutableStateOf(Size.Zero) }
+
+    //Filter logic
+    val filteredExercises = remember(searchText, exercises) {
+        if (searchText.isBlank()) emptyList()
+        else exercises.filter { it.contains(searchText, ignoreCase = true) }
+    }
+    // END: Updated logic
+
+    val addedExercises = remember { mutableStateListOf<RoutineExercise>().apply { addAll(routine?.exercises ?: emptyList()) } }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -343,6 +365,7 @@ fun CreateRoutineScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // START: REPLACED CARD FOR SEARCH BAR
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
@@ -358,68 +381,63 @@ fun CreateRoutineScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    ExposedDropdownMenuBox(
-                        expanded = expanded,
-                        onExpandedChange = { expanded = !expanded },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        OutlinedTextField(
-                            value = selectedExercise ?: "Select an exercise...",
-                            onValueChange = {},
-                            readOnly = true,
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                            modifier = Modifier
-                                .menuAnchor()
-                                .fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color.Gray,
-                                unfocusedBorderColor = Color.Gray,
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White
-                            )
-                        )
-
-                        ExposedDropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false },
-                            modifier = Modifier.background(Color(0xFF2C2C2C))
-                        ) {
-                            exercises.forEach { exercise ->
-                                DropdownMenuItem(
-                                    text = { Text(text = exercise, color = Color.White) },
-                                    onClick = {
-                                        selectedExercise = exercise
-                                        expanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    FilledIconButton(
-                        onClick = { 
-                            selectedExercise?.let {
-                                addedExercises.add(RoutineExercise(name = it))
-                                selectedExercise = null
+                // Search Bar Container
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = searchText,
+                        onValueChange = { 
+                            searchText = it
+                            expanded = true
+                        },
+                        placeholder = { Text("Search exercise...", color = Color.Gray) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onGloballyPositioned { coordinates ->
+                                textFieldSize = coordinates.size.toSize()
+                            },
+                        trailingIcon = {
+                            if (searchText.isNotEmpty()) {
+                                IconButton(onClick = { 
+                                    searchText = "" 
+                                    expanded = false
+                                }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Clear", tint = Color.Gray)
+                                }
+                            } else {
+                                Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Gray)
                             }
                         },
-                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = WorkoutBlue),
                         shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Icon(
-                            Icons.Filled.Add, 
-                            contentDescription = "Add", 
-                            tint = Color.White
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Gray,
+                            unfocusedBorderColor = Color.Gray,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
                         )
+                    )
+
+                    DropdownMenu(
+                        expanded = expanded && filteredExercises.isNotEmpty(),
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier
+                            .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
+                            .heightIn(max = 200.dp)
+                            .background(Color(0xFF2C2C2C)),
+                        properties = androidx.compose.ui.window.PopupProperties(focusable = false)
+                    ) {
+                        filteredExercises.forEach { exercise ->
+                            DropdownMenuItem(
+                                text = { Text(text = exercise, color = Color.White) },
+                                onClick = {
+                                    addedExercises.add(RoutineExercise(name = exercise))
+                                    searchText = ""
+                                    expanded = false
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -457,7 +475,7 @@ fun AddedExerciseCard(
         colors = CardDefaults.cardColors(containerColor = Color(0x22FFFFFF)), // Slightly more visible card
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) { // Reduced padding
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -472,7 +490,10 @@ fun AddedExerciseCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Headers
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp) // Spacing between headers
+            ) {
                 Text(text = "Set", modifier = Modifier.weight(0.5f), color = Color.Gray, textAlign = TextAlign.Center)
                 Text(text = "kg", modifier = Modifier.weight(1f), color = Color.Gray, textAlign = TextAlign.Center)
                 Text(text = "Reps", modifier = Modifier.weight(1f), color = Color.Gray, textAlign = TextAlign.Center)
@@ -487,7 +508,8 @@ fun AddedExerciseCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp) // Spacing between set items
                 ) {
                     Text(
                         text = "${index + 1}", 
@@ -500,13 +522,13 @@ fun AddedExerciseCard(
                         val newSets = exercise.sets.toMutableList()
                         newSets[index] = newSets[index].copy(weight = it)
                         onExerciseUpdate(exercise.copy(sets = newSets))
-                    }, modifier = Modifier.weight(1f).padding(horizontal = 4.dp))
+                    }, modifier = Modifier.weight(1f))
 
                     CompactTextField(value = set.reps, onValueChange = {
                         val newSets = exercise.sets.toMutableList()
                         newSets[index] = newSets[index].copy(reps = it)
                         onExerciseUpdate(exercise.copy(sets = newSets))
-                    }, modifier = Modifier.weight(1f).padding(horizontal = 4.dp))
+                    }, modifier = Modifier.weight(1f))
 
                     IconButton(onClick = {
                         if (exercise.sets.size > 1) { 

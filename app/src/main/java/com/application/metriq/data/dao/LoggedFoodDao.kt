@@ -3,7 +3,7 @@ package com.application.metriq.data.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
-import com.application.metriq.data.LoggedFood
+import com.application.metriq.data.entity.LoggedFood
 import kotlinx.coroutines.flow.Flow
 
 @Dao
