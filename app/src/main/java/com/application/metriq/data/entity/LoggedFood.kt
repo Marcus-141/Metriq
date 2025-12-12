@@ -33,6 +33,8 @@ data class LoggedFood(
     val cholesterol: Double = 0.0,
     val potassium: Double = 0.0,
     val saturatedFat: Double = 0.0,
+    
+    val mealType: String = MealType.SNACK.name,
 
     val weight: Double,
     val timestamp: Long

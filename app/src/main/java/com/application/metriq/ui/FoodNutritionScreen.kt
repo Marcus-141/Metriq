@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.application.metriq.data.entity.LoggedFood
+import com.application.metriq.data.entity.MealType
 import com.application.metriq.network.Food
 import com.application.metriq.viewmodel.DailyNutrients
 import com.application.metriq.viewmodel.FoodNutritionViewModel
@@ -49,6 +50,9 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
     val consumedFoods by viewModel.consumedFoods.collectAsState()
     val selectedDayOffset by viewModel.selectedDayOffset.collectAsState()
     val dailyTotals by viewModel.dailyTotals.collectAsState()
+    
+    // State to hold selected meal type. Default is Breakfast.
+    var selectedMealType by remember { mutableStateOf(MealType.BREAKFAST) }
 
     Column(
         modifier = Modifier
@@ -71,13 +75,21 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
         )
         
         Spacer(modifier = Modifier.height(16.dp))
-        LogFoodCard(searchQuery = searchQuery, onQueryChange = { 
-            searchQuery = it
-            viewModel.searchFoods(it)
-        }, onSearch = { 
-            Log.d("FoodNutritionScreen", "Search button clicked with query: $searchQuery")
-            viewModel.searchFoods(searchQuery) 
-        })
+        
+        LogFoodCard(
+            searchQuery = searchQuery, 
+            selectedMealType = selectedMealType,
+            onMealTypeChange = { selectedMealType = it },
+            onQueryChange = { 
+                searchQuery = it
+                viewModel.searchFoods(it)
+            }, 
+            onSearch = { 
+                Log.d("FoodNutritionScreen", "Search button clicked with query: $searchQuery")
+                viewModel.searchFoods(searchQuery) 
+            }
+        )
+        
         Spacer(modifier = Modifier.height(16.dp))
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(searchResults) { food ->
@@ -97,7 +109,8 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
             showDialog = false
             selectedFood = null 
         }) { weight ->
-            viewModel.addFood(foodToLog, weight, selectedDayOffset)
+            // Pass the selected MealType when adding food
+            viewModel.addFood(foodToLog, weight, selectedDayOffset, selectedMealType)
             showDialog = false
             selectedFood = null
         }
@@ -301,7 +314,43 @@ fun NutritionItem(value: String, label: String, valueColor: Color, labelColor: C
 }
 
 @Composable
-fun LogFoodCard(searchQuery: String, onQueryChange: (String) -> Unit, onSearch: () -> Unit) {
+fun MealTypeSelector(
+    selectedMealType: MealType,
+    onMealTypeSelected: (MealType) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        MealType.values().forEach { mealType ->
+            FilterChip(
+                selected = mealType == selectedMealType,
+                onClick = { onMealTypeSelected(mealType) },
+                label = { Text(mealType.displayName) },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color(0xFF00E676),
+                    selectedLabelColor = Color.Black,
+                    containerColor = Color.White.copy(alpha = 0.1f),
+                    labelColor = Color.White
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true, 
+                    selected = mealType == selectedMealType, 
+                    borderColor = Color.Transparent
+                )
+            )
+        }
+    }
+}
+
+@Composable
+fun LogFoodCard(
+    searchQuery: String, 
+    selectedMealType: MealType,
+    onMealTypeChange: (MealType) -> Unit,
+    onQueryChange: (String) -> Unit, 
+    onSearch: () -> Unit
+) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
@@ -309,6 +358,14 @@ fun LogFoodCard(searchQuery: String, onQueryChange: (String) -> Unit, onSearch: 
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Log Food", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(bottom = 8.dp))
+            
+            MealTypeSelector(
+                selectedMealType = selectedMealType,
+                onMealTypeSelected = onMealTypeChange
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -440,13 +497,21 @@ fun ConsumedFoodItem(consumedFood: LoggedFood) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = formatFoodName(consumedFood.name),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier.weight(1f).padding(end = 8.dp)
-            )
+            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                Text(
+                    text = formatFoodName(consumedFood.name),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                if (consumedFood.mealType.isNotEmpty()) {
+                    Text(
+                        text = consumedFood.mealType.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+            }
             Text(
                 text = "${df.format(consumedFood.weight)}g",
                 style = MaterialTheme.typography.bodyMedium,

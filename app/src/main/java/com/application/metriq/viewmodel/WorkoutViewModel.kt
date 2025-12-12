@@ -1,6 +1,7 @@
 package com.application.metriq.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.application.metriq.data.AppDatabase
@@ -27,7 +28,12 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            _allExercises.value = loadExercisesFromAssets(getApplication())
+            try {
+                _allExercises.value = loadExercisesFromAssets(getApplication())
+            } catch (e: Exception) {
+                Log.e("WorkoutViewModel", "Error loading exercises", e)
+                _allExercises.value = emptyList()
+            }
         }
     }
 

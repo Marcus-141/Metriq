@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.application.metriq.data.AppDatabase
 import com.application.metriq.data.entity.LoggedFood
+import com.application.metriq.data.entity.MealType
 import com.application.metriq.network.Food
 import com.application.metriq.network.FoodNutrient
 import com.application.metriq.network.RetrofitInstance
@@ -161,7 +162,7 @@ class FoodNutritionViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    fun addFood(summaryFood: Food, weight: Double, offset: Int) {
+    fun addFood(summaryFood: Food, weight: Double, offset: Int, mealType: MealType) {
         viewModelScope.launch {
             var foodToUse = summaryFood
             try {
@@ -177,6 +178,7 @@ class FoodNutritionViewModel(application: Application) : AndroidViewModel(applic
             val carbs = (getNutrientValue(foodToUse.foodNutrients, "Carbohydrate, by difference") / 100) * weight
             val fats = (getNutrientValue(foodToUse.foodNutrients, "Total lipid (fat)") / 100) * weight
 
+            // Micronutrients (Previous)
             val fiber = (getNutrientValue(foodToUse.foodNutrients, "Fiber, total dietary") / 100) * weight
             val sugar = (getNutrientValue(foodToUse.foodNutrients, "Sugars, total including NLEA") / 100) * weight
             val sodium = (getNutrientValue(foodToUse.foodNutrients, "Sodium, Na") / 100) * weight
@@ -184,7 +186,7 @@ class FoodNutritionViewModel(application: Application) : AndroidViewModel(applic
             val potassium = (getNutrientValue(foodToUse.foodNutrients, "Potassium, K") / 100) * weight
             val saturatedFat = (getNutrientValue(foodToUse.foodNutrients, "Fatty acids, total saturated") / 100) * weight
             
-            // Micronutrients (Vitamins & minerals)
+            // New Micronutrients (Advanced)
             val vitaminD = (getNutrientValue(foodToUse.foodNutrients, "Vitamin D (D2 + D3)") / 100) * weight
             val vitaminB12 = (getNutrientValue(foodToUse.foodNutrients, "Vitamin B-12") / 100) * weight
             val folate = (getNutrientValue(foodToUse.foodNutrients, "Folate, total") / 100) * weight
@@ -236,7 +238,8 @@ class FoodNutritionViewModel(application: Application) : AndroidViewModel(applic
                 iodine = iodine,
                 zinc = zinc,
                 weight = weight,
-                timestamp = timestamp
+                timestamp = timestamp,
+                mealType = mealType.name
             )
             dao.insert(loggedFood)
         }
