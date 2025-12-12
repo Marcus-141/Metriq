@@ -10,6 +10,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,6 +28,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -105,7 +108,11 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        TodayMealsCard(groupedFoods = groupedConsumedFoods, offset = selectedDayOffset)
+        TodayMealsCard(
+            groupedFoods = groupedConsumedFoods, 
+            offset = selectedDayOffset,
+            onDeleteFood = { food -> viewModel.deleteFood(food) }
+        )
     }
     
     val foodToLog = selectedFood
@@ -399,7 +406,11 @@ fun LogFoodCard(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TodayMealsCard(groupedFoods: Map<MealType, List<LoggedFood>>, offset: Int) {
+fun TodayMealsCard(
+    groupedFoods: Map<MealType, List<LoggedFood>>, 
+    offset: Int,
+    onDeleteFood: (LoggedFood) -> Unit
+) {
     var isExpanded by remember { mutableStateOf(true) } // Expanded by default
     val pagerState = rememberPagerState { MealType.values().size }
     val coroutineScope = rememberCoroutineScope()
@@ -488,7 +499,7 @@ fun TodayMealsCard(groupedFoods: Map<MealType, List<LoggedFood>>, offset: Int) {
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 items(foodsForMeal) { food ->
-                                    ConsumedFoodItem(consumedFood = food)
+                                    ConsumedFoodItem(consumedFood = food, onDelete = onDeleteFood)
                                 }
                             }
                         }
@@ -521,67 +532,105 @@ private fun MacroItem(label: String, value: String, color: Color) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ConsumedFoodItem(consumedFood: LoggedFood) {
+fun ConsumedFoodItem(consumedFood: LoggedFood, onDelete: (LoggedFood) -> Unit) {
     val df = DecimalFormat("#.##")
+    val haptic = LocalHapticFeedback.current
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // Top row: Food name and weight
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                Text(
-                    text = formatFoodName(consumedFood.name),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = TextWhite
-                )
-                if (consumedFood.mealType.isNotEmpty()) {
-                    Text(
-                        text = consumedFood.mealType.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextGray
-                    )
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Food") },
+            text = { Text("Are you sure you want to delete this item?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDelete(consumedFood)
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Delete", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
                 }
             }
-            Text(
-                text = "${df.format(consumedFood.weight)}g",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextGray
-            )
-        }
+        )
+    }
 
-        Spacer(modifier = Modifier.height(8.dp))
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = { /* Handle regular click if needed */ },
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    showDeleteDialog = true
+                }
+            )
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Top row: Food name and weight
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                    Text(
+                        text = formatFoodName(consumedFood.name),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = TextWhite
+                    )
+                    if (consumedFood.mealType.isNotEmpty()) {
+                        Text(
+                            text = consumedFood.mealType.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextGray
+                        )
+                    }
+                }
+                Text(
+                    text = "${df.format(consumedFood.weight)}g",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextGray
+                )
+            }
 
-        // Bottom row: Macros, separated and color-coded
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            MacroItem(
-                label = "Kcal",
-                value = consumedFood.calories.toInt().toString(),
-                color = PrimaryGreen // Bright Green
-            )
-            MacroItem(
-                label = "P",
-                value = "${df.format(consumedFood.protein)}g",
-                color = NutrientProtein // Light Blue
-            )
-            MacroItem(
-                label = "C",
-                value = "${df.format(consumedFood.carbs)}g",
-                color = NutrientCarbs // Green
-            )
-            MacroItem(
-                label = "F",
-                value = "${df.format(consumedFood.fats)}g",
-                color = NutrientFats // Red
-            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Bottom row: Macros, separated and color-coded
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                MacroItem(
+                    label = "Kcal",
+                    value = consumedFood.calories.toInt().toString(),
+                    color = PrimaryGreen // Bright Green
+                )
+                MacroItem(
+                    label = "P",
+                    value = "${df.format(consumedFood.protein)}g",
+                    color = NutrientProtein // Light Blue
+                )
+                MacroItem(
+                    label = "C",
+                    value = "${df.format(consumedFood.carbs)}g",
+                    color = NutrientCarbs // Green
+                )
+                MacroItem(
+                    label = "F",
+                    value = "${df.format(consumedFood.fats)}g",
+                    color = NutrientFats // Red
+                )
+            }
         }
     }
 }
