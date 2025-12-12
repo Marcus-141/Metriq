@@ -23,7 +23,11 @@ class SessionManager(context: Context) {
         val AGE = stringPreferencesKey("age")
         val GENDER = stringPreferencesKey("gender")
         val ACTIVITY_LEVEL = stringPreferencesKey("activity_level")
+        val FITNESS_GOAL = stringPreferencesKey("fitness_goal")
+        val CALORIE_GOAL = stringPreferencesKey("calorie_goal")
         val PROTEIN = stringPreferencesKey("protein")
+        val CARBS = stringPreferencesKey("carbs")
+        val FATS = stringPreferencesKey("fats")
         val BMR = stringPreferencesKey("bmr")
         val TEE = stringPreferencesKey("tee")
     }
@@ -44,7 +48,11 @@ class SessionManager(context: Context) {
         age: String,
         gender: String,
         activityLevel: String,
+        fitnessGoal: String,
+        calorieGoal: String,
         protein: String,
+        carbs: String,
+        fats: String,
         bmr: String,
         tee: String
     ) {
@@ -54,7 +62,11 @@ class SessionManager(context: Context) {
             it[AGE] = age
             it[GENDER] = gender
             it[ACTIVITY_LEVEL] = activityLevel
+            it[FITNESS_GOAL] = fitnessGoal
+            it[CALORIE_GOAL] = calorieGoal
             it[PROTEIN] = protein
+            it[CARBS] = carbs
+            it[FATS] = fats
             it[BMR] = bmr
             it[TEE] = tee
         }
@@ -65,7 +77,11 @@ class SessionManager(context: Context) {
     val age: Flow<String> = dataStore.data.map { it[AGE] ?: "" }
     val gender: Flow<String> = dataStore.data.map { it[GENDER] ?: "" }
     val activityLevel: Flow<String> = dataStore.data.map { it[ACTIVITY_LEVEL] ?: "" }
+    val fitnessGoal: Flow<String> = dataStore.data.map { it[FITNESS_GOAL] ?: "" }
+    val calorieGoal: Flow<String> = dataStore.data.map { it[CALORIE_GOAL] ?: "" }
     val protein: Flow<String> = dataStore.data.map { it[PROTEIN] ?: "" }
+    val carbs: Flow<String> = dataStore.data.map { it[CARBS] ?: "" }
+    val fats: Flow<String> = dataStore.data.map { it[FATS] ?: "" }
     val bmr: Flow<String> = dataStore.data.map { it[BMR] ?: "" }
     val tee: Flow<String> = dataStore.data.map { it[TEE] ?: "" }
 }
