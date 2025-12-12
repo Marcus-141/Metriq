@@ -655,136 +655,91 @@ fun AddedExerciseCard(
     onExerciseUpdate: (RoutineExercise) -> Unit,
     onRemoveExercise: () -> Unit
 ) {
-    var isRemoved by remember { mutableStateOf(false) }
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                isRemoved = true
-                true
-            } else {
-                false
-            }
-        }
-    )
-
-    LaunchedEffect(isRemoved) {
-        if (isRemoved) {
-            delay(300) // Wait for animation
-            onRemoveExercise()
-        }
-    }
-
-    AnimatedVisibility(
-        visible = !isRemoved,
-        exit = shrinkVertically(animationSpec = tween(durationMillis = 300)) + fadeOut(animationSpec = tween(durationMillis = 300))
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0x22FFFFFF)), // Slightly more visible card
+        modifier = Modifier.fillMaxWidth()
     ) {
-        SwipeToDismissBox(
-            state = dismissState,
-            backgroundContent = {
-                val color = if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) Color.Red else Color.Transparent
-                Box(
+        Column(modifier = Modifier.padding(12.dp)) { // Reduced padding
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = exercise.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Headers
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp) // Spacing between headers
+            ) {
+                Text(text = "Set", modifier = Modifier.weight(0.5f), color = Color.Gray, textAlign = TextAlign.Center)
+                Text(text = "kg", modifier = Modifier.weight(1f), color = Color.Gray, textAlign = TextAlign.Center)
+                Text(text = "Reps", modifier = Modifier.weight(1f), color = Color.Gray, textAlign = TextAlign.Center)
+                Spacer(modifier = Modifier.width(48.dp)) // For delete icon
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Sets
+            exercise.sets.forEachIndexed { index, set ->
+                Row(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(color, RoundedCornerShape(12.dp))
-                        .padding(horizontal = 20.dp),
-                    contentAlignment = Alignment.CenterEnd
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp) // Spacing between set items
                 ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = Color.White
+                    Text(
+                        text = "${index + 1}",
+                        modifier = Modifier.weight(0.5f),
+                        color = Color.White,
+                        textAlign = TextAlign.Center
                     )
-                }
-            },
-            content = {
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0x22FFFFFF)), // Slightly more visible card
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) { // Reduced padding
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(text = exercise.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                            // Removed delete icon here as it's now handled by swipe
+
+                    CompactTextField(value = set.weight, onValueChange = {
+                        val newSets = exercise.sets.toMutableList()
+                        newSets[index] = newSets[index].copy(weight = it)
+                        onExerciseUpdate(exercise.copy(sets = newSets))
+                    }, modifier = Modifier.weight(1f))
+
+                    CompactTextField(value = set.reps, onValueChange = {
+                        val newSets = exercise.sets.toMutableList()
+                        newSets[index] = newSets[index].copy(reps = it)
+                        onExerciseUpdate(exercise.copy(sets = newSets))
+                    }, modifier = Modifier.weight(1f))
+
+                    // This is the small delete button for each individual set. This is correct and stays.
+                    IconButton(onClick = {
+                        if (exercise.sets.size > 1) {
+                            val newSets = exercise.sets.toMutableList()
+                            newSets.removeAt(index)
+                            onExerciseUpdate(exercise.copy(sets = newSets))
                         }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Headers
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp) // Spacing between headers
-                        ) {
-                            Text(text = "Set", modifier = Modifier.weight(0.5f), color = Color.Gray, textAlign = TextAlign.Center)
-                            Text(text = "kg", modifier = Modifier.weight(1f), color = Color.Gray, textAlign = TextAlign.Center)
-                            Text(text = "Reps", modifier = Modifier.weight(1f), color = Color.Gray, textAlign = TextAlign.Center)
-                            Spacer(modifier = Modifier.width(48.dp)) // For delete icon
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        // Sets
-                        exercise.sets.forEachIndexed { index, set ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp) // Spacing between set items
-                            ) {
-                                Text(
-                                    text = "${index + 1}", 
-                                    modifier = Modifier.weight(0.5f),
-                                    color = Color.White, 
-                                    textAlign = TextAlign.Center
-                                )
-                                
-                                CompactTextField(value = set.weight, onValueChange = {
-                                    val newSets = exercise.sets.toMutableList()
-                                    newSets[index] = newSets[index].copy(weight = it)
-                                    onExerciseUpdate(exercise.copy(sets = newSets))
-                                }, modifier = Modifier.weight(1f))
-
-                                CompactTextField(value = set.reps, onValueChange = {
-                                    val newSets = exercise.sets.toMutableList()
-                                    newSets[index] = newSets[index].copy(reps = it)
-                                    onExerciseUpdate(exercise.copy(sets = newSets))
-                                }, modifier = Modifier.weight(1f))
-
-                                IconButton(onClick = {
-                                    if (exercise.sets.size > 1) { 
-                                        val newSets = exercise.sets.toMutableList()
-                                        newSets.removeAt(index)
-                                        onExerciseUpdate(exercise.copy(sets = newSets))
-                                    }
-                                }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Remove Set", tint = Color.Gray)
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = {
-                                val newSets = exercise.sets.toMutableList()
-                                newSets.add(ExerciseSet())
-                                onExerciseUpdate(exercise.copy(sets = newSets))
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = WorkoutBlue.copy(alpha = 0.2f)),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(text = "+ Add Set", color = WorkoutBlue, fontWeight = FontWeight.Bold)
-                        }
+                    }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Remove Set", tint = Color.Gray)
                     }
                 }
             }
-        )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    val newSets = exercise.sets.toMutableList()
+                    newSets.add(ExerciseSet())
+                    onExerciseUpdate(exercise.copy(sets = newSets))
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = WorkoutBlue.copy(alpha = 0.2f)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(text = "+ Add Set", color = WorkoutBlue, fontWeight = FontWeight.Bold)
+            }
+        }
     }
 }
 
