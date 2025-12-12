@@ -8,11 +8,13 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-private val Context.dataStore by preferencesDataStore(name = "session")
+// CHANGE 1: Rename this to something specific to avoid conflicts
+private val Context.sessionDataStore by preferencesDataStore(name = "session")
 
 class SessionManager(context: Context) {
 
-    private val dataStore = context.dataStore
+    // CHANGE 2: Update the reference here to match the name above
+    private val dataStore = context.sessionDataStore
 
     companion object {
         val IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
@@ -37,10 +39,10 @@ class SessionManager(context: Context) {
     }
 
     suspend fun saveProfileData(
-        weight: String, 
-        height: String, 
-        age: String, 
-        gender: String, 
+        weight: String,
+        height: String,
+        age: String,
+        gender: String,
         activityLevel: String,
         protein: String,
         bmr: String,

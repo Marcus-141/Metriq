@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -105,6 +106,17 @@ class FoodNutritionViewModel(application: Application) : AndroidViewModel(applic
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DailyNutrients())
     
+    val historicalData: StateFlow<Map<LocalDate, Double>> = dao.getAllFoods()
+        .map { allFoods ->
+            allFoods.groupBy {
+                LocalDate.ofInstant(Instant.ofEpochMilli(it.timestamp), ZoneId.systemDefault())
+            }
+            .mapValues { entry -> entry.value.sumOf { it.calories } }
+            .toSortedMap(compareByDescending { it })
+            .filterKeys { it.isAfter(LocalDate.now().minusDays(7)) }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     // RDA Goals (Adult Average)
     private val nutrientGoals = mapOf(
         "Vitamin D" to 15.0, // mcg

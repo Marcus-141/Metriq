@@ -43,6 +43,8 @@ import com.application.metriq.network.Food
 import com.application.metriq.ui.theme.*
 import com.application.metriq.viewmodel.DailyNutrients
 import com.application.metriq.viewmodel.FoodNutritionViewModel
+import com.application.metriq.viewmodel.ProfileViewModel
+import com.application.metriq.viewmodel.UserGoals
 import kotlinx.coroutines.launch
 import java.text.DecimalFormat
 import java.time.LocalDate
@@ -50,7 +52,11 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionViewModel = viewModel()) {
+fun FoodNutritionScreen(
+    navController: NavController, 
+    viewModel: FoodNutritionViewModel = viewModel(),
+    profileViewModel: ProfileViewModel = viewModel()
+) {
     var searchQuery by remember { mutableStateOf("") }
     val searchResults by viewModel.searchResults.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
@@ -59,6 +65,7 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
     val groupedConsumedFoods by viewModel.groupedConsumedFoods.collectAsState()
     val selectedDayOffset by viewModel.selectedDayOffset.collectAsState()
     val dailyTotals by viewModel.dailyTotals.collectAsState()
+    val userGoals by profileViewModel.userGoals.collectAsState()
     
     var selectedMealType by remember { mutableStateOf(MealType.BREAKFAST) }
 
@@ -69,6 +76,7 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
     ) {
         DayNutritionCard(
             dailyNutrients = dailyTotals,
+            userGoals = userGoals,
             offset = selectedDayOffset,
             onPrev = { 
                 if (selectedDayOffset < 30) {
@@ -131,6 +139,7 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
 @Composable
 fun DayNutritionCard(
     dailyNutrients: DailyNutrients,
+    userGoals: UserGoals,
     offset: Int,
     onPrev: () -> Unit,
     onNext: () -> Unit
@@ -214,28 +223,33 @@ fun DayNutritionCard(
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
                 NutritionItem(
-                    value = dailyNutrients.calories.toInt().toString(),
+                    current = dailyNutrients.calories,
+                    goal = userGoals.calorieGoal,
                     label = "CALORIES",
                     valueColor = PrimaryGreen,
-                    labelColor = TextGray
+                    labelColor = TextGray,
+                    isCalorie = true
                 )
 
                 NutritionItem(
-                    value = df.format(dailyNutrients.protein),
+                    current = dailyNutrients.protein,
+                    goal = userGoals.proteinGoal,
                     label = "Protein (g)",
                     valueColor = TextWhite,
                     labelColor = TextGray
                 )
 
                 NutritionItem(
-                    value = df.format(dailyNutrients.carbs),
+                    current = dailyNutrients.carbs,
+                    goal = userGoals.carbsGoal,
                     label = "Carbs (g)",
                     valueColor = TextWhite,
                     labelColor = TextGray
                 )
 
                 NutritionItem(
-                    value = df.format(dailyNutrients.fats),
+                    current = dailyNutrients.fats,
+                    goal = userGoals.fatsGoal,
                     label = "Fats (g)",
                     valueColor = TextWhite,
                     labelColor = TextGray
@@ -307,14 +321,38 @@ fun MicroNutrientRow(label: String, value: String) {
 }
 
 @Composable
-fun NutritionItem(value: String, label: String, valueColor: Color, labelColor: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+fun NutritionItem(
+    current: Double, 
+    goal: Double, 
+    label: String, 
+    valueColor: Color, 
+    labelColor: Color,
+    isCalorie: Boolean = false
+) {
+    val progress = (current / goal).coerceIn(0.0, 1.0).toFloat()
+    
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(80.dp)
+    ) {
         Text(
-            text = value,
-            fontSize = 24.sp,
+            text = "${current.toInt()} / ${goal.toInt()}",
+            fontSize = if (isCalorie) 16.sp else 14.sp,
             fontWeight = FontWeight.Bold,
-            color = valueColor
+            color = valueColor,
+            maxLines = 1
         )
+        Spacer(modifier = Modifier.height(4.dp))
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .padding(horizontal = 4.dp),
+            color = valueColor,
+            trackColor = valueColor.copy(alpha = 0.2f),
+        )
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = label,
             fontSize = 12.sp,

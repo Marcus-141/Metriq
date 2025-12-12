@@ -17,4 +17,7 @@ interface LoggedFoodDao {
 
     @Query("SELECT * FROM logged_foods WHERE timestamp >= :startOfDay AND timestamp < :endOfDay ORDER BY timestamp DESC")
     fun getFoodsForDate(startOfDay: Long, endOfDay: Long): Flow<List<LoggedFood>>
+
+    @Query("SELECT * FROM logged_foods ORDER BY timestamp DESC")
+    fun getAllFoods(): Flow<List<LoggedFood>>
 }
