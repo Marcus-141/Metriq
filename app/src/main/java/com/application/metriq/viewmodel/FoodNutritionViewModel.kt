@@ -249,6 +249,12 @@ class FoodNutritionViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    fun deleteFood(food: LoggedFood) {
+        viewModelScope.launch {
+            dao.delete(food)
+        }
+    }
+
     private fun getNutrientValue(nutrients: List<FoodNutrient>, nutrientName: String, unitName: String? = null): Double {
         return nutrients.find { 
             it.nutrientName == nutrientName && (unitName == null || it.unitName == unitName)

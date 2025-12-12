@@ -37,6 +37,7 @@ import androidx.navigation.NavController
 import com.application.metriq.data.entity.LoggedFood
 import com.application.metriq.data.entity.MealType
 import com.application.metriq.network.Food
+import com.application.metriq.ui.theme.*
 import com.application.metriq.viewmodel.DailyNutrients
 import com.application.metriq.viewmodel.FoodNutritionViewModel
 import kotlinx.coroutines.launch
@@ -144,7 +145,7 @@ fun DayNutritionCard(
 
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+        colors = CardDefaults.cardColors(containerColor = CardBackground),
         modifier = Modifier
             .fillMaxWidth()
             .clickable { expanded = !expanded }
@@ -159,7 +160,7 @@ fun DayNutritionCard(
                     Icon(
                         Icons.Default.ChevronLeft,
                         contentDescription = "Previous Day",
-                        tint = Color.Gray
+                        tint = TextGray
                     )
                 }
 
@@ -168,7 +169,7 @@ fun DayNutritionCard(
                         Icon(
                             Icons.Default.PieChart,
                             contentDescription = null,
-                            tint = Color(0xFF00E676),
+                            tint = PrimaryGreen,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -176,14 +177,14 @@ fun DayNutritionCard(
                             text = title,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = TextWhite
                         )
                     }
                     if (!expanded) {
                         Text(
                             text = "(Tap for details)",
                             fontSize = 10.sp,
-                            color = Color.Gray,
+                            color = TextGray,
                             modifier = Modifier.padding(top = 2.dp)
                         )
                     }
@@ -193,7 +194,7 @@ fun DayNutritionCard(
                     Icon(
                         Icons.Default.ChevronRight,
                         contentDescription = "Next Day",
-                        tint = if (offset > 0) Color.Gray else Color.DarkGray
+                        tint = if (offset > 0) TextGray else Color.DarkGray
                     )
                 }
             }
@@ -208,29 +209,29 @@ fun DayNutritionCard(
                 NutritionItem(
                     value = dailyNutrients.calories.toInt().toString(),
                     label = "CALORIES",
-                    valueColor = Color(0xFF00E676),
-                    labelColor = Color.Gray
+                    valueColor = PrimaryGreen,
+                    labelColor = TextGray
                 )
 
                 NutritionItem(
                     value = df.format(dailyNutrients.protein),
                     label = "Protein (g)",
-                    valueColor = Color.White,
-                    labelColor = Color.Gray
+                    valueColor = TextWhite,
+                    labelColor = TextGray
                 )
 
                 NutritionItem(
                     value = df.format(dailyNutrients.carbs),
                     label = "Carbs (g)",
-                    valueColor = Color.White,
-                    labelColor = Color.Gray
+                    valueColor = TextWhite,
+                    labelColor = TextGray
                 )
 
                 NutritionItem(
                     value = df.format(dailyNutrients.fats),
                     label = "Fats (g)",
-                    valueColor = Color.White,
-                    labelColor = Color.Gray
+                    valueColor = TextWhite,
+                    labelColor = TextGray
                 )
             }
             
@@ -242,14 +243,14 @@ fun DayNutritionCard(
             ) {
                 Column {
                     Spacer(modifier = Modifier.height(24.dp))
-                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
+                    HorizontalDivider(color = TextGray.copy(alpha = 0.3f))
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     Text(
                         text = "Micronutrients",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = TextWhite,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
 
@@ -293,8 +294,8 @@ fun MicroNutrientRow(label: String, value: String) {
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = label, color = Color.Gray, fontSize = 14.sp)
-        Text(text = value, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Text(text = label, color = TextGray, fontSize = 14.sp)
+        Text(text = value, color = TextWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -331,10 +332,10 @@ fun MealTypeSelector(
                 onClick = { onMealTypeSelected(mealType) },
                 label = { Text(mealType.displayName) },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = Color(0xFF00E676),
+                    selectedContainerColor = LogoCyan,
                     selectedLabelColor = Color.Black,
-                    containerColor = Color.White.copy(alpha = 0.1f),
-                    labelColor = Color.White
+                    containerColor = CardBackgroundFaded,
+                    labelColor = TextWhite
                 ),
                 border = FilterChipDefaults.filterChipBorder(
                     enabled = true, 
@@ -356,11 +357,11 @@ fun LogFoodCard(
 ) {
     Card(
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
+        colors = CardDefaults.cardColors(containerColor = CardBackgroundFaded),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Log Food", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(bottom = 8.dp))
+            Text("Log Food", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextWhite, modifier = Modifier.padding(bottom = 8.dp))
             
             MealTypeSelector(
                 selectedMealType = selectedMealType,
@@ -383,8 +384,8 @@ fun LogFoodCard(
                         unfocusedBorderColor = Color.Transparent,
                         focusedBorderColor = Color.Transparent,
                         cursorColor = MaterialTheme.colorScheme.primary,
-                        unfocusedContainerColor = Color.White.copy(alpha = 0.1f),
-                        focusedContainerColor = Color.White.copy(alpha = 0.1f)
+                        unfocusedContainerColor = CardBackgroundFaded,
+                        focusedContainerColor = CardBackgroundFaded
                     )
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -411,7 +412,7 @@ fun TodayMealsCard(groupedFoods: Map<MealType, List<LoggedFood>>, offset: Int) {
 
     Card(
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
+        colors = CardDefaults.cardColors(containerColor = CardBackgroundFaded),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(vertical = 16.dp)) {
@@ -427,13 +428,13 @@ fun TodayMealsCard(groupedFoods: Map<MealType, List<LoggedFood>>, offset: Int) {
                     text = title,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = TextWhite
                 )
                 IconButton(onClick = { isExpanded = !isExpanded }) {
                     Icon(
                         imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
                         contentDescription = if (isExpanded) "Collapse" else "Expand",
-                        tint = Color.White
+                        tint = TextWhite
                     )
                 }
             }
@@ -448,8 +449,8 @@ fun TodayMealsCard(groupedFoods: Map<MealType, List<LoggedFood>>, offset: Int) {
                     TabRow(
                         selectedTabIndex = pagerState.currentPage,
                         containerColor = Color.Transparent,
-                        contentColor = Color(0xFF00E676),
-                        divider = { HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f)) }
+                        contentColor = PrimaryGreen,
+                        divider = { HorizontalDivider(color = TextGray.copy(alpha = 0.3f)) }
                     ) {
                         MealType.values().forEachIndexed { index, mealType ->
                             Tab(
@@ -476,7 +477,7 @@ fun TodayMealsCard(groupedFoods: Map<MealType, List<LoggedFood>>, offset: Int) {
                             ) {
                                 Text(
                                     text = "No ${mealType.displayName} logged",
-                                    color = Color.Gray,
+                                    color = TextGray,
                                     textAlign = TextAlign.Center
                                 )
                             }
@@ -504,7 +505,7 @@ private fun MacroItem(label: String, value: String, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = "$label:",
-            color = Color.Gray,
+            color = TextGray,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.alignByBaseline()
@@ -536,20 +537,20 @@ fun ConsumedFoodItem(consumedFood: LoggedFood) {
                     text = formatFoodName(consumedFood.name),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = TextWhite
                 )
                 if (consumedFood.mealType.isNotEmpty()) {
                     Text(
                         text = consumedFood.mealType.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = TextGray
                     )
                 }
             }
             Text(
                 text = "${df.format(consumedFood.weight)}g",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+                color = TextGray
             )
         }
 
@@ -564,22 +565,22 @@ fun ConsumedFoodItem(consumedFood: LoggedFood) {
             MacroItem(
                 label = "Kcal",
                 value = consumedFood.calories.toInt().toString(),
-                color = Color(0xFF00E676) // Bright Green
+                color = PrimaryGreen // Bright Green
             )
             MacroItem(
                 label = "P",
                 value = "${df.format(consumedFood.protein)}g",
-                color = Color(0xFF29B6F6) // Light Blue
+                color = NutrientProtein // Light Blue
             )
             MacroItem(
                 label = "C",
                 value = "${df.format(consumedFood.carbs)}g",
-                color = Color(0xFF43A047) // Green
+                color = NutrientCarbs // Green
             )
             MacroItem(
                 label = "F",
                 value = "${df.format(consumedFood.fats)}g",
-                color = Color(0xFFEF5350) // Red
+                color = NutrientFats // Red
             )
         }
     }
@@ -639,7 +640,7 @@ fun FoodListItem(food: Food, onClick: () -> Unit) {
             .padding(vertical = 4.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f))
+        colors = CardDefaults.cardColors(containerColor = CardBackgroundFaded)
     ) {
         Row(
             modifier = Modifier
@@ -653,13 +654,13 @@ fun FoodListItem(food: Food, onClick: () -> Unit) {
                     text = "${formatFoodName(foodName)} (100g)",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = TextWhite
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "${calories.toInt()} kcal • P: ${df.format(protein)}g C: ${df.format(carbs)}g F: ${df.format(fats)}g",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = TextGray
                 )
             }
             Surface(
