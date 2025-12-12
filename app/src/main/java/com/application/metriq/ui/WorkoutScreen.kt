@@ -1,6 +1,10 @@
 package com.application.metriq.ui
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -44,46 +48,69 @@ import com.application.metriq.ui.theme.MetriqTheme
 import com.application.metriq.ui.theme.LogoCyan
 import com.application.metriq.ui.theme.WorkoutBlue
 import com.application.metriq.viewmodel.WorkoutViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun WorkoutScreen(navController: NavController, viewModel: WorkoutViewModel = viewModel()) {
-    var isCreatingOrEditingRoutine by remember { mutableStateOf(false) }
-    var selectedRoutine by remember { mutableStateOf<WorkoutRoutine?>(null) }
+    var isEditingRoutine by remember { mutableStateOf(false) }
+    var viewingRoutine by remember { mutableStateOf<WorkoutRoutine?>(null) }
+    var selectedRoutineForEdit by remember { mutableStateOf<WorkoutRoutine?>(null) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        if (isCreatingOrEditingRoutine) {
-            CreateRoutineScreen(
-                routine = selectedRoutine,
-                viewModel = viewModel,
-                onBack = {
-                    isCreatingOrEditingRoutine = false
-                    selectedRoutine = null
-                },
-                onSave = { routine ->
-                    if (routine.id == 0L) {
-                        viewModel.addRoutine(routine.name, routine.exercises)
-                    } else {
-                        viewModel.updateRoutine(routine)
+        when {
+            isEditingRoutine -> {
+                CreateRoutineScreen(
+                    routine = selectedRoutineForEdit,
+                    viewModel = viewModel,
+                    onBack = {
+                        isEditingRoutine = false
+                        selectedRoutineForEdit = null
+                    },
+                    onSave = { routine ->
+                        if (routine.id == 0L) {
+                            viewModel.addRoutine(routine.name, routine.exercises)
+                        } else {
+                            viewModel.updateRoutine(routine)
+                        }
+                        isEditingRoutine = false
+                        selectedRoutineForEdit = null
                     }
-                    isCreatingOrEditingRoutine = false
-                    selectedRoutine = null
-                }
-            )
-        } else {
-            WorkoutListScreen(
-                viewModel = viewModel,
-                onCreateRoutine = { 
-                    selectedRoutine = null
-                    isCreatingOrEditingRoutine = true 
-                },
-                onEditRoutine = { routine ->
-                    selectedRoutine = routine
-                    isCreatingOrEditingRoutine = true
-                }
-            )
+                )
+            }
+            viewingRoutine != null -> {
+                ViewRoutineScreen(
+                    routine = viewingRoutine!!,
+                    onBack = { viewingRoutine = null },
+                    onEdit = {
+                        selectedRoutineForEdit = viewingRoutine
+                        viewingRoutine = null
+                        isEditingRoutine = true
+                    }
+                )
+            }
+            else -> {
+                WorkoutListScreen(
+                    viewModel = viewModel,
+                    onCreateRoutine = { 
+                        selectedRoutineForEdit = null
+                        isEditingRoutine = true 
+                    },
+                    onViewRoutine = { routine ->
+                        viewingRoutine = routine
+                    },
+                    onEditRoutine = { routine ->
+                        selectedRoutineForEdit = routine
+                        isEditingRoutine = true
+                    },
+                    onDeleteRoutine = { routine ->
+                        viewModel.deleteRoutine(routine)
+                    }
+                )
+            }
         }
     }
 }
@@ -92,7 +119,9 @@ fun WorkoutScreen(navController: NavController, viewModel: WorkoutViewModel = vi
 fun WorkoutListScreen(
     viewModel: WorkoutViewModel,
     onCreateRoutine: () -> Unit,
-    onEditRoutine: (WorkoutRoutine) -> Unit
+    onViewRoutine: (WorkoutRoutine) -> Unit,
+    onEditRoutine: (WorkoutRoutine) -> Unit,
+    onDeleteRoutine: (WorkoutRoutine) -> Unit
 ) {
     val routines by viewModel.routines.collectAsState()
 
@@ -216,7 +245,12 @@ fun WorkoutListScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(routines) { routine ->
-                    RoutineItem(routine = routine, onClick = { onEditRoutine(routine) })
+                    RoutineItem(
+                        routine = routine, 
+                        onView = { onViewRoutine(routine) },
+                        onEdit = { onEditRoutine(routine) },
+                        onDelete = { onDeleteRoutine(routine) }
+                    )
                 }
             }
         }
@@ -224,11 +258,18 @@ fun WorkoutListScreen(
 }
 
 @Composable
-fun RoutineItem(routine: WorkoutRoutine, onClick: () -> Unit) {
+fun RoutineItem(
+    routine: WorkoutRoutine,
+    onView: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(onClick = onView), // Main card click triggers view
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -240,7 +281,7 @@ fun RoutineItem(routine: WorkoutRoutine, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = routine.name,
                     fontWeight = FontWeight.Bold,
@@ -253,6 +294,150 @@ fun RoutineItem(routine: WorkoutRoutine, onClick: () -> Unit) {
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
+            }
+            
+            Box {
+                IconButton(onClick = { expanded = true }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Options",
+                        tint = Color.White
+                    )
+                }
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Edit") },
+                        onClick = {
+                            expanded = false
+                            onEdit()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Delete") },
+                        onClick = {
+                            expanded = false
+                            onDelete()
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ViewRoutineScreen(
+    routine: WorkoutRoutine,
+    onBack: () -> Unit,
+    onEdit: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .background(Color.White.copy(alpha = 0.1f), CircleShape)
+                    .size(40.dp)
+            ) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
+            Text(
+                text = "Routine Details",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+             Button(
+                onClick = onEdit,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF448AFF)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Edit")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = routine.name,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
+        
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            items(routine.exercises) { exercise ->
+                 Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0x22FFFFFF)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                         Text(
+                             text = exercise.name, 
+                             color = Color.White, 
+                             fontWeight = FontWeight.Bold, 
+                             fontSize = 18.sp,
+                             modifier = Modifier.padding(bottom = 8.dp)
+                         )
+
+                        // Headers
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(text = "Set", modifier = Modifier.weight(0.5f), color = Color.Gray, textAlign = TextAlign.Center)
+                            Text(text = "kg", modifier = Modifier.weight(1f), color = Color.Gray, textAlign = TextAlign.Center)
+                            Text(text = "Reps", modifier = Modifier.weight(1f), color = Color.Gray, textAlign = TextAlign.Center)
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Sets
+                        exercise.sets.forEachIndexed { index, set ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "${index + 1}", 
+                                    modifier = Modifier.weight(0.5f),
+                                    color = Color.White, 
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = set.weight, 
+                                    modifier = Modifier.weight(1f),
+                                    color = Color.White, 
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = set.reps, 
+                                    modifier = Modifier.weight(1f),
+                                    color = Color.White, 
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -445,7 +630,7 @@ fun CreateRoutineScreen(
         Spacer(modifier = Modifier.height(24.dp))
         
         LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            items(addedExercises) { exercise ->
+            items(addedExercises, key = { it.hashCode() }) { exercise ->
                 AddedExerciseCard(
                     exercise = exercise, 
                     onExerciseUpdate = { updatedExercise ->
@@ -463,99 +648,143 @@ fun CreateRoutineScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddedExerciseCard(
     exercise: RoutineExercise,
     onExerciseUpdate: (RoutineExercise) -> Unit,
     onRemoveExercise: () -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0x22FFFFFF)), // Slightly more visible card
-        modifier = Modifier.fillMaxWidth()
+    var isRemoved by remember { mutableStateOf(false) }
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                isRemoved = true
+                true
+            } else {
+                false
+            }
+        }
+    )
+
+    LaunchedEffect(isRemoved) {
+        if (isRemoved) {
+            delay(300) // Wait for animation
+            onRemoveExercise()
+        }
+    }
+
+    AnimatedVisibility(
+        visible = !isRemoved,
+        exit = shrinkVertically(animationSpec = tween(durationMillis = 300)) + fadeOut(animationSpec = tween(durationMillis = 300))
     ) {
-        Column(modifier = Modifier.padding(12.dp)) { // Reduced padding
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = exercise.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                IconButton(onClick = onRemoveExercise) {
-                    Icon(Icons.Default.Delete, contentDescription = "Remove Exercise", tint = Color.Gray)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Headers
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp) // Spacing between headers
-            ) {
-                Text(text = "Set", modifier = Modifier.weight(0.5f), color = Color.Gray, textAlign = TextAlign.Center)
-                Text(text = "kg", modifier = Modifier.weight(1f), color = Color.Gray, textAlign = TextAlign.Center)
-                Text(text = "Reps", modifier = Modifier.weight(1f), color = Color.Gray, textAlign = TextAlign.Center)
-                Spacer(modifier = Modifier.width(48.dp)) // For delete icon
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Sets
-            exercise.sets.forEachIndexed { index, set ->
-                Row(
+        SwipeToDismissBox(
+            state = dismissState,
+            backgroundContent = {
+                val color = if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) Color.Red else Color.Transparent
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp) // Spacing between set items
+                        .fillMaxSize()
+                        .background(color, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = Alignment.CenterEnd
                 ) {
-                    Text(
-                        text = "${index + 1}", 
-                        modifier = Modifier.weight(0.5f),
-                        color = Color.White, 
-                        textAlign = TextAlign.Center
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = Color.White
                     )
-                    
-                    CompactTextField(value = set.weight, onValueChange = {
-                        val newSets = exercise.sets.toMutableList()
-                        newSets[index] = newSets[index].copy(weight = it)
-                        onExerciseUpdate(exercise.copy(sets = newSets))
-                    }, modifier = Modifier.weight(1f))
-
-                    CompactTextField(value = set.reps, onValueChange = {
-                        val newSets = exercise.sets.toMutableList()
-                        newSets[index] = newSets[index].copy(reps = it)
-                        onExerciseUpdate(exercise.copy(sets = newSets))
-                    }, modifier = Modifier.weight(1f))
-
-                    IconButton(onClick = {
-                        if (exercise.sets.size > 1) { 
-                            val newSets = exercise.sets.toMutableList()
-                            newSets.removeAt(index)
-                            onExerciseUpdate(exercise.copy(sets = newSets))
+                }
+            },
+            content = {
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0x22FFFFFF)), // Slightly more visible card
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) { // Reduced padding
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = exercise.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            // Removed delete icon here as it's now handled by swipe
                         }
-                    }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Remove Set", tint = Color.Gray)
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Headers
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp) // Spacing between headers
+                        ) {
+                            Text(text = "Set", modifier = Modifier.weight(0.5f), color = Color.Gray, textAlign = TextAlign.Center)
+                            Text(text = "kg", modifier = Modifier.weight(1f), color = Color.Gray, textAlign = TextAlign.Center)
+                            Text(text = "Reps", modifier = Modifier.weight(1f), color = Color.Gray, textAlign = TextAlign.Center)
+                            Spacer(modifier = Modifier.width(48.dp)) // For delete icon
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Sets
+                        exercise.sets.forEachIndexed { index, set ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp) // Spacing between set items
+                            ) {
+                                Text(
+                                    text = "${index + 1}", 
+                                    modifier = Modifier.weight(0.5f),
+                                    color = Color.White, 
+                                    textAlign = TextAlign.Center
+                                )
+                                
+                                CompactTextField(value = set.weight, onValueChange = {
+                                    val newSets = exercise.sets.toMutableList()
+                                    newSets[index] = newSets[index].copy(weight = it)
+                                    onExerciseUpdate(exercise.copy(sets = newSets))
+                                }, modifier = Modifier.weight(1f))
+
+                                CompactTextField(value = set.reps, onValueChange = {
+                                    val newSets = exercise.sets.toMutableList()
+                                    newSets[index] = newSets[index].copy(reps = it)
+                                    onExerciseUpdate(exercise.copy(sets = newSets))
+                                }, modifier = Modifier.weight(1f))
+
+                                IconButton(onClick = {
+                                    if (exercise.sets.size > 1) { 
+                                        val newSets = exercise.sets.toMutableList()
+                                        newSets.removeAt(index)
+                                        onExerciseUpdate(exercise.copy(sets = newSets))
+                                    }
+                                }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Remove Set", tint = Color.Gray)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Button(
+                            onClick = {
+                                val newSets = exercise.sets.toMutableList()
+                                newSets.add(ExerciseSet())
+                                onExerciseUpdate(exercise.copy(sets = newSets))
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = WorkoutBlue.copy(alpha = 0.2f)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(text = "+ Add Set", color = WorkoutBlue, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    val newSets = exercise.sets.toMutableList()
-                    newSets.add(ExerciseSet())
-                    onExerciseUpdate(exercise.copy(sets = newSets))
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = WorkoutBlue.copy(alpha = 0.2f)),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(text = "+ Add Set", color = WorkoutBlue, fontWeight = FontWeight.Bold)
-            }
-        }
+        )
     }
 }
 
