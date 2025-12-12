@@ -76,6 +76,10 @@ class FoodNutritionViewModel(application: Application) : AndroidViewModel(applic
         dao.getFoodsForDate(start, end)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val groupedConsumedFoods: StateFlow<Map<MealType, List<LoggedFood>>> = consumedFoods.map { foods ->
+        foods.groupBy { MealType.valueOf(it.mealType) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     val dailyTotals: StateFlow<DailyNutrients> = consumedFoods.map { foods ->
         DailyNutrients(
             calories = foods.sumOf { it.calories },

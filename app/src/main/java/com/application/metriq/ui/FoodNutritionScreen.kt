@@ -1,4 +1,4 @@
-@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.application.metriq.ui
 
@@ -8,10 +8,13 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
@@ -26,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -35,6 +39,7 @@ import com.application.metriq.data.entity.MealType
 import com.application.metriq.network.Food
 import com.application.metriq.viewmodel.DailyNutrients
 import com.application.metriq.viewmodel.FoodNutritionViewModel
+import kotlinx.coroutines.launch
 import java.text.DecimalFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -47,11 +52,10 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
     var showDialog by remember { mutableStateOf(false) }
     var selectedFood by remember { mutableStateOf<Food?>(null) }
     
-    val consumedFoods by viewModel.consumedFoods.collectAsState()
+    val groupedConsumedFoods by viewModel.groupedConsumedFoods.collectAsState()
     val selectedDayOffset by viewModel.selectedDayOffset.collectAsState()
     val dailyTotals by viewModel.dailyTotals.collectAsState()
     
-    // State to hold selected meal type. Default is Breakfast.
     var selectedMealType by remember { mutableStateOf(MealType.BREAKFAST) }
 
     Column(
@@ -100,7 +104,7 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        TodayMealsCard(consumedFoods = consumedFoods, offset = selectedDayOffset)
+        TodayMealsCard(groupedFoods = groupedConsumedFoods, offset = selectedDayOffset)
     }
     
     val foodToLog = selectedFood
@@ -109,7 +113,6 @@ fun FoodNutritionScreen(navController: NavController, viewModel: FoodNutritionVi
             showDialog = false
             selectedFood = null 
         }) { weight ->
-            // Pass the selected MealType when adding food
             viewModel.addFood(foodToLog, weight, selectedDayOffset, selectedMealType)
             showDialog = false
             selectedFood = null
@@ -393,9 +396,12 @@ fun LogFoodCard(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TodayMealsCard(consumedFoods: List<LoggedFood>, offset: Int) {
-    var isExpanded by remember { mutableStateOf(false) }
+fun TodayMealsCard(groupedFoods: Map<MealType, List<LoggedFood>>, offset: Int) {
+    var isExpanded by remember { mutableStateOf(true) } // Expanded by default
+    val pagerState = rememberPagerState { MealType.values().size }
+    val coroutineScope = rememberCoroutineScope()
 
     val title = when (offset) {
         0 -> "Today's Consumption"
@@ -406,14 +412,14 @@ fun TodayMealsCard(consumedFoods: List<LoggedFood>, offset: Int) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { isExpanded = !isExpanded } // Toggle on card click
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(vertical = 16.dp)) {
             // Header Row
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -432,31 +438,58 @@ fun TodayMealsCard(consumedFoods: List<LoggedFood>, offset: Int) {
                 }
             }
 
-            // Expandable Content
+            // Expandable Content with Tabs and Pager
             AnimatedVisibility(
                 visible = isExpanded,
-                enter = expandVertically() + fadeIn()
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
             ) {
-                // Scrollable container with max height
-                Column(
-                    modifier = Modifier
-                        .heightIn(max = 200.dp) // Limit height
-                        .verticalScroll(rememberScrollState()) // Enable scrolling
-                ) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    if (consumedFoods.isEmpty()) {
-                        Text(
-                            text = "No meals logged.",
-                            color = Color.Gray,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    } else {
-                        consumedFoods.forEach { consumedFood ->
-                            HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            ConsumedFoodItem(consumedFood = consumedFood)
-                            Spacer(modifier = Modifier.height(8.dp))
+                Column {
+                    TabRow(
+                        selectedTabIndex = pagerState.currentPage,
+                        containerColor = Color.Transparent,
+                        contentColor = Color(0xFF00E676),
+                        divider = { HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f)) }
+                    ) {
+                        MealType.values().forEachIndexed { index, mealType ->
+                            Tab(
+                                selected = pagerState.currentPage == index,
+                                onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
+                                text = { Text(mealType.displayName) }
+                            )
+                        }
+                    }
+
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.height(250.dp) // Give the pager a fixed height
+                    ) {
+                        val mealType = MealType.values()[it]
+                        val foodsForMeal = groupedFoods[mealType] ?: emptyList()
+
+                        if (foodsForMeal.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "No ${mealType.displayName} logged",
+                                    color = Color.Gray,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(foodsForMeal) { food ->
+                                    ConsumedFoodItem(consumedFood = food)
+                                }
+                            }
                         }
                     }
                 }
@@ -464,6 +497,7 @@ fun TodayMealsCard(consumedFoods: List<LoggedFood>, offset: Int) {
         }
     }
 }
+
 
 @Composable
 private fun MacroItem(label: String, value: String, color: Color) {
